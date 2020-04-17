@@ -2,8 +2,13 @@ import cv2
 import numpy as np
 
 # cap = cv2.VideoCapture("/Users/felipemoran/Desktop/TCC/datasets/videos/Megamind.avi")
-cap = cv2.VideoCapture("/Users/felipemoran/Desktop/TCC/datasets/videos/vtest.avi")
+# cap = cv2.VideoCapture("/Users/felipemoran/Desktop/TCC/datasets/sala/original/video.MOV")
 # cap = cv2.VideoCapture("/Users/felipemoran/Desktop/TCC/datasets/videos/slow.mp4")
+
+cap = cv2.VideoCapture("/Users/felipemoran/Desktop/TCC/datasets/sala/480_30.mp4")
+# cap = cv2.VideoCapture("/Users/felipemoran/Desktop/TCC/datasets/sala/576_25.mp4")
+# cap = cv2.VideoCapture("/Users/felipemoran/Desktop/TCC/datasets/sala/720_30.mp4")
+# cap = cv2.VideoCapture("/Users/felipemoran/Desktop/TCC/datasets/sala/1080_30.mp4")
 
 ret, frame1 = cap.read()
 prvs = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
