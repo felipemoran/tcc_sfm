@@ -55,17 +55,34 @@ class SimplePipeline:
         prev_feature_pack_id = None
         prev_track_slice = None
 
+        stored_cameras = []
+        stored_points = {}
+
         # Loop through frames (using generators)
-        for (next_frame_id, next_feature_pack_id, next_track_slice, is_new_feature_set) in self._process_next_frame(file):
+        for (next_frame_id, next_feature_pack_id, next_track_slice, is_new_feature_set) \
+                in self._process_next_frame(file):
             if is_new_feature_set:
                 prev_frame_id = next_frame_id
                 prev_feature_pack_id = next_feature_pack_id
                 prev_track_slice = next_track_slice
                 continue
 
+            assert prev_feature_pack_id == next_feature_pack_id
+
+            tracks = np.array([prev_track_slice, next_track_slice], next_feature_pack_id)
+
             # TODO: calculate 2 camera positions
-            # TODO: translate point and camera positions back to reference frame (camera 0 probably)
-            # TODO: store this data somewhere. Keep in mind that a same point might have multiple calculated positions
+            rel_R, rel_t, points_3d, points_indexes = self._get_relative_movement(tracks)
+
+            # TODO: translate camera position back to reference frame
+            comp_R, comp_t = self._compose_movement(comp_R, comp_t, rel_R, rel_t)
+
+            # TODO: translate 3D point positiona back to reference frame
+            points_3d = self._translate_point_positions(comp_R, comp_t, points_3d)
+
+            # TODO: store everything for later use
+            stored_points = self._store_new_points(stored_points, points_3d, points_indexes)
+            stored_cameras += [rel_R, rel_t]
 
         # TODO: when all frames are processed, plot result
         # TODO: but to do that, first average point positions when there are multiple
@@ -163,35 +180,74 @@ class SimplePipeline:
         frame_features = frame_features.squeeze()
         frame_features = frame_features[status]
 
-        # create track slice
-        track_slice = np.zeros(
+        # create track slice (Nx2)
+        track_slice = np.full(
             (
-                2,  # x and y coordinates for a point in an image
                 num_features,  # number of features detected on reference frame for track
-            ), dtype=np.float_)
+                2,  # x and y coordinates for a point in an image
+            ), -1, dtype=np.float_)
 
         # and populate it
         for feature_index, track_index in enumerate(track_indexes):
-            track_slice[0][track_index] = frame_features[feature_index][0]
-            track_slice[1][track_index] = frame_features[feature_index][1]
+            track_slice[track_index] = frame_features[feature_index]
+            # track_slice[0][track_index] = frame_features[feature_index][0]
+            # track_slice[1][track_index] = frame_features[feature_index][1]
 
         return track_indexes, frame_features, track_slice
 
+    def _get_relative_movement(self, tracks, feature_pack_id):
+        num_points = tracks.shape[1]
+        point_indexes = np.array(range(num_points)) + self.feature_params['maxCorners']
 
-if __name__ == '__main__':
+        assert len(tracks) == 2, 'Reconstruction from more than 2 views not yet implemented'
+
+        # Remove all points that don't have correspondence between frames
+        mask = [bool((tracks[:, point_index] > 0).all()) for point_index in range(num_points)]
+        trimmed_tracks = tracks[:, mask]
+        point_indexes = point_indexes[mask]
+
+        E, mask = cv2.findEssentialMat(trimmed_tracks[0], trimmed_tracks[1], self.camera_matrix, cv2.RANSAC)
+        retval, R, t, mask, points_3d = cv2.recoverPose(E,
+                                                        trimmed_tracks[0],
+                                                        trimmed_tracks[1],
+                                                        self.camera_matrix,
+                                                        distanceThresh=self.reconstruction_distance_threshold,
+                                                        mask=mask
+                                                        )
+        # TODO: test
+
+        # TODO: filter out 3d_points and point_indexes according to mask
+
+        return R, t, points_3d, point_indexes
+
+    @staticmethod
+    def _compose_movement(comp_R, comp_t, rel_R, rel_t):
+        # use cv2.composeRT(rvec1, tvec1, rvec2, tvec2) and get first return value
+        # TODO: implement
+        return None, None
+
+    @staticmethod
+    def _translate_point_positions(comp_R, comp_t, points_3d):
+        # TODO: implement
+        return points_3d
+
+    @staticmethod
+    def _store_new_points(stored_points, points_3d, points_indexes):
+        for point_index, point in zip(points_indexes, points_3d):
+            if point_index not in stored_points:
+                stored_points[point_index] = {'accum': point, 'count': 1}
+                continue
+
+            stored_points[point_index]['count'] += 1
+            stored_points[point_index]['accum'] += point
+            # TODO: check is this is valid
+
+        return stored_points
+
+    if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('dir',
                         help='Directory with image files for reconstructions')
-    # parser.add_argument('-mrate', '--match_survival_rate', type=float,
-    #                     help='Survival rate of matches to consider image pair success', default=0.5)
-    # parser.add_argument('-viz', '--visualize',
-    #                     help='Visualize the sparse point cloud reconstruction?', action='store_true', default=False)
-    # parser.add_argument('-sd', '--save_debug_visualization',
-    #                     help='Save debug visualizations to files?', action='store_true', default=False)
-    # parser.add_argument('-mvs', '--save_mvs',
-    #                     help='Save reconstruction to an .mvs file? Provide filename')
-    # parser.add_argument('-sc', '--save_cloud',
-    #                     help='Save reconstruction to a point cloud file (PLY, XYZ and OBJ). Provide filename')
 
     args = parser.parse_args()
 
