@@ -1,6 +1,7 @@
 import os
 import cv2
 import glob
+import time
 import copy
 import random
 import argparse
@@ -16,11 +17,12 @@ from os import path
 
 class SimplePipeline:
 
-    def __init__(self, dir):
+    def __init__(self, dir, save_debug_visualization=False):
         self.dir = dir
+        self.save_debug_visualization = save_debug_visualization
 
         # Number of frames to skip between used frames (eg. 2 means using frames 1, 4, 7 and dropping 2, 3, 5, 6)
-        self.frames_to_skip = 10
+        self.frames_to_skip = 1
 
         # Number of frames for initial estimation
         self.num_frames_initial_estimation = 10
@@ -44,8 +46,19 @@ class SimplePipeline:
         }
 
         self.image_size = None
-        self.k = None
+
+        self.camera_matrix = np.array([[765.16859169, 0., 379.11876567],
+                                       [0., 762.38664643, 497.22086655],
+                                       [0., 0., 1.]])
+        # self.camera_matrix = np.array([[10, 0., 1],
+        #                                [0., 1, 100],
+        #                                [0., 0., 1.]])
+
         self.k_ = None
+
+        self.reconstruction_distance_threshold = 2
+
+        self.debug_colors = np.random.randint(0, 255, (self.feature_params['maxCorners'], 3))
 
     def run(self):
         # Start by finding the images
@@ -58,6 +71,9 @@ class SimplePipeline:
         stored_cameras = []
         stored_points = {}
 
+        comp_R = None
+        comp_t = None
+
         # Loop through frames (using generators)
         for (next_frame_id, next_feature_pack_id, next_track_slice, is_new_feature_set) \
                 in self._process_next_frame(file):
@@ -69,21 +85,25 @@ class SimplePipeline:
 
             assert prev_feature_pack_id == next_feature_pack_id
 
-            tracks = np.array([prev_track_slice, next_track_slice], next_feature_pack_id)
+            tracks = np.array([prev_track_slice, next_track_slice])
 
             # TODO: calculate 2 camera positions
-            rel_R, rel_t, points_3d, points_indexes = self._get_relative_movement(tracks)
-
-            # TODO: translate camera position back to reference frame
-            comp_R, comp_t = self._compose_movement(comp_R, comp_t, rel_R, rel_t)
+            rel_R, rel_t, points_3d, points_indexes = self._get_relative_movement(tracks, next_feature_pack_id)
+            if rel_R is None:
+                continue
 
             # TODO: translate 3D point positiona back to reference frame
-            points_3d = self._translate_point_positions(comp_R, comp_t, points_3d)
+            # points_3d = self._translate_point_positions(comp_R, comp_t, points_3d)
 
-            # TODO: store everything for later use
+            # TODO: translate camera position back to reference frame
+            # comp_R, comp_t = self._compose_movement(comp_R, comp_t, rel_R, rel_t)
+
+            #
+            # # TODO: store everything for later use
             stored_points = self._store_new_points(stored_points, points_3d, points_indexes)
-            stored_cameras += [rel_R, rel_t]
+            stored_cameras += [[rel_R, rel_t]]
 
+        a = 1
         # TODO: when all frames are processed, plot result
         # TODO: but to do that, first average point positions when there are multiple
 
@@ -104,6 +124,8 @@ class SimplePipeline:
         reset_features = True
         next_frame = None
 
+        mask = None
+
         # this counter is actually for processed frames and not for raw frames
         frame_counter = 0
 
@@ -115,9 +137,9 @@ class SimplePipeline:
                 # check if we're in the first iteration
                 if next_frame is None:
                     # if yes, get the first frame
-                    ret, next_frame = file.read()
+                    ret, next_frame_color = file.read()
                     assert ret, 'File has no frames!'
-                    next_frame = cv2.cvtColor(next_frame, cv2.COLOR_BGR2GRAY)
+                    next_frame = cv2.cvtColor(next_frame_color, cv2.COLOR_BGR2GRAY)
 
                 # generate new feature set
                 next_features = cv2.goodFeaturesToTrack(next_frame, mask=None, **self.feature_params)
@@ -134,13 +156,13 @@ class SimplePipeline:
                 # Read frame
                 # skip some frames between frame reads. The last one is a useful frame
                 for _ in range(self.frames_to_skip + 1):
-                    ret, next_frame = file.read()
+                    ret, next_frame_color = file.read()
                     if not ret:
                         return
 
                 frame_counter += 1
 
-                next_frame = cv2.cvtColor(next_frame, cv2.COLOR_BGR2GRAY)
+                next_frame = cv2.cvtColor(next_frame_color, cv2.COLOR_BGR2GRAY)
 
                 # calculate optical flow
                 next_features, status, err = cv2.calcOpticalFlowPyrLK(
@@ -154,6 +176,38 @@ class SimplePipeline:
                 if frame_counter - ref_frame == self.feature_reset_rate:
                     reset_features = True
 
+                if self.save_debug_visualization:
+                    # if mask is None:
+                    #     mask = np.zeros_like(next_frame_color)
+                    mask = np.zeros_like(next_frame_color)
+
+                    for feature_index, feature_status in enumerate(status):
+                        if feature_status[0] == 0:
+                            continue
+                        next_x, next_y = next_features[feature_index]
+                        prev_x, prev_y = prev_features[feature_index]
+
+                        mask = cv2.line(mask,
+                                        (next_x, next_y),
+                                        (prev_x, prev_y),
+                                        self.debug_colors[feature_index].tolist(),
+                                        2)
+                        next_frame_color = cv2.circle(next_frame_color,
+                                                      (next_x, next_y),
+                                                      5,
+                                                      self.debug_colors[track_indexes[feature_index]].tolist(),
+                                                      -1)
+
+                    img = cv2.add(next_frame_color, mask)
+
+                    cv2.imshow('frame', img)
+                    time.sleep(0.02)
+                    k = cv2.waitKey(30) & 0xff
+                    if k == 27:
+                        break
+
+            print(frame_counter)
+
             # generate track slice
             track_indexes, next_features, track_slice = self._features_to_track_slice(
                 num_features=num_features,
@@ -163,10 +217,11 @@ class SimplePipeline:
                 # mimics the same format as status from cv2.calcOpticalFlowPyrLK()
             )
 
+            yield frame_counter, ref_frame, track_slice, is_new_feature_set
+
             prev_frame = next_frame.copy()  # do I really need this .copy() ?
             prev_features = next_features
 
-            yield frame_counter, ref_frame, track_slice, is_new_feature_set
             is_new_feature_set = False
 
     @staticmethod
@@ -197,34 +252,58 @@ class SimplePipeline:
 
     def _get_relative_movement(self, tracks, feature_pack_id):
         num_points = tracks.shape[1]
-        point_indexes = np.array(range(num_points)) + self.feature_params['maxCorners']
+        point_indexes = np.array(range(num_points)) + self.feature_params['maxCorners'] * feature_pack_id
 
         assert len(tracks) == 2, 'Reconstruction from more than 2 views not yet implemented'
 
         # Remove all points that don't have correspondence between frames
-        mask = [bool((tracks[:, point_index] > 0).all()) for point_index in range(num_points)]
-        trimmed_tracks = tracks[:, mask]
-        point_indexes = point_indexes[mask]
+        track_mask = [bool((tracks[:, point_index] > 0).all()) for point_index in range(num_points)]
+        trimmed_tracks = tracks[:, track_mask]
+        point_indexes = point_indexes[track_mask]
 
-        E, mask = cv2.findEssentialMat(trimmed_tracks[0], trimmed_tracks[1], self.camera_matrix, cv2.RANSAC)
-        retval, R, t, mask, points_3d = cv2.recoverPose(E,
-                                                        trimmed_tracks[0],
-                                                        trimmed_tracks[1],
-                                                        self.camera_matrix,
-                                                        distanceThresh=self.reconstruction_distance_threshold,
-                                                        mask=mask
-                                                        )
-        # TODO: test
+        if trimmed_tracks.shape[1] <= 5:
+            # Abort!
+            return [None] * 4
 
+        E, five_pt_mask = cv2.findEssentialMat(trimmed_tracks[0], trimmed_tracks[1], self.camera_matrix, cv2.RANSAC)
+
+        rep = int(round(20 * sum(five_pt_mask.squeeze()) / five_pt_mask.shape[0]))
+        irep = 20 - rep
+        print('Find E --> {:2} / {:2}  {:2}'.format(sum(five_pt_mask.squeeze()), five_pt_mask.shape[0],
+                                                    '#' * rep + '_' * irep))
+
+        retval, R, t, pose_mask, points_4d = cv2.recoverPose(E=E,
+                                                             points1=trimmed_tracks[0],
+                                                             points2=trimmed_tracks[1],
+                                                             cameraMatrix=self.camera_matrix,
+                                                             distanceThresh=self.reconstruction_distance_threshold,
+                                                             mask=five_pt_mask
+                                                             # mask=None
+                                                             )
+
+        rep = int(round(20 * sum(pose_mask.squeeze()) / pose_mask.shape[0]))
+        irep = 20 - rep
+        print('Pose   --> {:2} / {:2}  {:2}'.format(sum(pose_mask.squeeze()), pose_mask.shape[0], '#' * rep + '_' * irep))
+
+        # print("R: {}".format(R))
+        # print("t: {}".format(t))
         # TODO: filter out 3d_points and point_indexes according to mask
+        final_mask = pose_mask.squeeze().astype(np.bool)
+        points_3d = cv2.convertPointsFromHomogeneous(points_4d.transpose()).squeeze()
+        points_3d = points_3d[final_mask]
+        point_indexes = point_indexes[final_mask]
 
         return R, t, points_3d, point_indexes
 
     @staticmethod
     def _compose_movement(comp_R, comp_t, rel_R, rel_t):
-        # use cv2.composeRT(rvec1, tvec1, rvec2, tvec2) and get first return value
-        # TODO: implement
-        return None, None
+        if comp_R is None:
+            return rel_R, rel_t
+
+        ret = cv2.composeRT(comp_R, comp_t, rel_R, rel_t)
+        comp_R = ret[0]
+        comp_t = ret[1]
+        return comp_R, comp_t
 
     @staticmethod
     def _translate_point_positions(comp_R, comp_t, points_3d):
@@ -236,19 +315,28 @@ class SimplePipeline:
         for point_index, point in zip(points_indexes, points_3d):
             if point_index not in stored_points:
                 stored_points[point_index] = {'accum': point, 'count': 1}
-                continue
+            else:
+                stored_points[point_index]['count'] += 1
+                stored_points[point_index]['accum'] += point
 
-            stored_points[point_index]['count'] += 1
-            stored_points[point_index]['accum'] += point
-            # TODO: check is this is valid
+            stored_points[point_index]['avg_point'] = \
+                stored_points[point_index]['accum'] / stored_points[point_index]['count']
+
 
         return stored_points
 
-    if __name__ == '__main__':
+    @staticmethod
+    def _calculate_avarege_points_position(stored_points):
+        for point_index, point_data in stored_points:
+            stored_points['avg_point'] = stored_points[point_index]['accum'] / stored_points[point_index]['count']
+
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('dir',
                         help='Directory with image files for reconstructions')
-
+    parser.add_argument('-sd', '--save_debug_visualization',
+                        help='Save debug visualizations to files?', action='store_true', default=False)
     args = parser.parse_args()
 
     sfm = SimplePipeline(**vars(args))

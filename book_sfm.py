@@ -153,12 +153,12 @@ class StructureFromMotion:
         matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
         matches = {}
 
-        for (index_i, file_i, filename_i, descriptors_i, keypoints_i), (index_j, file_j, filename_j, descriptors_j, keypoints_j) \
-                in itertools.combinations(zip(range(len(files)), files, filenames, descriptors, keypoints), r=2):
-
-        # base_zip = list(zip(range(len(files)), files, filenames, descriptors, keypoints))
         # for (index_i, file_i, filename_i, descriptors_i, keypoints_i), (index_j, file_j, filename_j, descriptors_j, keypoints_j) \
-        #         in zip(base_zip[0:-2], base_zip[1:-1]):
+        #         in itertools.combinations(zip(range(len(files)), files, filenames, descriptors, keypoints), r=2):
+
+        base_zip = list(zip(range(len(files)), files, filenames, descriptors, keypoints))
+        for (index_i, file_i, filename_i, descriptors_i, keypoints_i), (index_j, file_j, filename_j, descriptors_j, keypoints_j) \
+                in zip(base_zip[0:-2], base_zip[1:-1]):
 
             raw_match_ij = matcher.knnMatch(descriptors_i, descriptors_j, 2)
             raw_match_ji = matcher.knnMatch(descriptors_j, descriptors_i, 2)
