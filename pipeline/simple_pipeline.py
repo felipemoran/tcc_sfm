@@ -56,7 +56,7 @@ class SimplePipeline:
 
         self.k_ = None
 
-        self.reconstruction_distance_threshold = 2
+        self.reconstruction_distance_threshold = 50
 
         self.debug_colors = np.random.randint(0, 255, (self.feature_params['maxCorners'], 3))
 
@@ -265,7 +265,9 @@ class SimplePipeline:
             # Abort!
             return [None] * 4
 
-        E, five_pt_mask = cv2.findEssentialMat(trimmed_tracks[0], trimmed_tracks[1], self.camera_matrix, cv2.RANSAC)
+        # E, five_pt_mask = cv2.findEssentialMat(trimmed_tracks[0], trimmed_tracks[1], self.camera_matrix, cv2.LMEDS, )
+        E, five_pt_mask = cv2.findEssentialMat(trimmed_tracks[0], trimmed_tracks[1], self.camera_matrix, cv2.RANSAC,
+                                               threshold=1, prob=0.99)
 
         rep = int(round(20 * sum(five_pt_mask.squeeze()) / five_pt_mask.shape[0]))
         irep = 20 - rep
