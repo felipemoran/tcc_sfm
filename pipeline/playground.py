@@ -12,8 +12,11 @@ import open3d as o3d
 import networkx as nt
 import matplotlib.pyplot as plt
 
+from math import pi, sqrt
 
-from math import pi
+np.set_printoptions(3, suppress=True)
+
+
 def playground_1():
     # camera arbitraria
     camera_matrix = np.array([
@@ -26,26 +29,30 @@ def playground_1():
     points_3d = np.array(list(itertools.product([9, 11], [4, 6], [-1, 1])), dtype=np.float_)
 
     # matrizes de rotação para o posicionamento das cameras
-    r0_1 = cv2.Rodrigues(np.array([pi/2, 0., 0.]))[0]
-    r1_3 = cv2.Rodrigues(np.array([pi/2, 0, 0]))[0]
-    r1_4 = cv2.Rodrigues(np.array([0., 0, -3*pi/4]))[0]
+    r1 = cv2.Rodrigues(np.array([-pi/2, 0., 0.]))[0]
+    r2 = cv2.Rodrigues(np.array([0, -3*pi/2, 0]))[0]
 
-    # vetores de translação das câmeras
+    # vetores de translação das câmeras na base global
     ts = np.array([
-        [-10, 0, 0],
-        [-5, 0, 15],
+        [10, 0, 0],
+        [15, 5, 0]
     ], dtype=np.float_)
 
-    # vetores de rotação das cameras baseados na multiplicação e conversão das matrizes de rotação apropriadas
-    R_vecs = np.array([
-        cv2.Rodrigues(r0_1)[0],
-        cv2.Rodrigues(np.matmul(r1_3, r1_4))[0],
+    # vetores de rotação das cameras na base global
+    Rs = np.array([
+        r1,
+        np.matmul(r1, r2),
     ])
 
     # para cada câmera calcule a projeção de cada ponto e imprima
     tracks = [None]*2
-    for index, (R_vec, t) in enumerate(zip(R_vecs, ts)):
-        tracks[index] = cv2.projectPoints(points_3d, R_vec, t, camera_matrix, None)[0].squeeze()
+    for index, (R, t) in enumerate(zip(Rs, ts)):
+        # convert to the camera base, important!
+        t_cam = np.matmul(R.transpose(), -t)
+        R_cam = R.transpose()
+        R_cam_vec = cv2.Rodrigues(R_cam)[0]
+
+        tracks[index] = cv2.projectPoints(points_3d, R_cam_vec, t_cam, camera_matrix, None)[0].squeeze()
         for p3d, p2d in zip(points_3d, tracks[index]):
             print(p3d, p2d)
         print()
@@ -99,7 +106,9 @@ def playground_1():
         points_3d = points_3d[final_mask]
         point_indexes = point_indexes[final_mask]
 
-        print(cv2.Rodrigues(R)[0])
+        Rv = cv2.Rodrigues(R)[0]
+
+        print(Rv)
         print()
         print(t)
 
@@ -113,19 +122,19 @@ def playground_2():
     TYPE_CAMERA = 1
     TYPE_POINT = 2
     # define TYPE_POINT 2
-    # point_coordinates = np.array(list(itertools.product([8, 9, 10, 11, 12], [4, 5, 6], [0])) +
-    #                              list(itertools.product([9, 10, 11], [4, 5, 6], [1])) +
-    #                              list(itertools.product([10], [4, 5, 6], [2]))
-    #                              )
-    point_coordinates = np.array(list(itertools.product([9, 10, 11], [4, 5, 6], [-1, 0, 1])))
+    point_coordinates = np.array(list(itertools.product([8, 9, 10, 11, 12], [4, 5, 6], [0])) +
+                                 list(itertools.product([9, 10, 11], [4, 5, 6], [1])) +
+                                 list(itertools.product([10], [4, 5, 6], [2]))
+                                 )
+    # point_coordinates = np.array(list(itertools.product([9, 10, 11], [4, 5, 6], [-1, 0, 1])))
     points = {index:{'avg_point':point} for index, point in enumerate(point_coordinates)}
 
-    # matrizes de rotação para o posicionamento das cameras
+    # matrizes de rotação para o posicionamento das cameras na base da camera
     r0_1 = cv2.Rodrigues(np.array([pi / 2, 0., 0.]))[0]
     r1_3 = cv2.Rodrigues(np.array([pi / 2, 0, 0]))[0]
     r1_4 = cv2.Rodrigues(np.array([0., 0, - pi / 2]))[0]
 
-    # vetores de translação das câmeras
+    # vetores de translação das câmeras na case da camera
     ts = np.array([
         [-10, 0, 0],
         [-5, 0, 15],
@@ -154,8 +163,9 @@ def playground_2():
             convert_and_save_line(line_elements)
 
             for index, (R, t) in enumerate(zip(Rs, ts)):
-                t = np.matmul(np.matmul(R, -t), R.transpose())
-                R = np.linalg.inv(R)
+                # convert from camera to global coordinate system
+                t = np.matmul(R.transpose(), -t)
+                R = R.transpose()
 
                 line_elements = [TYPE_CAMERA, index] + list((R).flatten()) + list((t).flatten())
                 convert_and_save_line(line_elements)
@@ -175,7 +185,9 @@ def playground_2():
     os.system(os.path.join(os.getcwd(), 'visualizer', 'cmake-build-debug', 'visualizer') + ' ' +
               os.path.join(os.getcwd(), 'out', 'viz_data.csv'))
 
+
 if __name__ == '__main__':
+    playground_1()
     playground_2()
 
 
