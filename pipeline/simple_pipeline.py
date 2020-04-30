@@ -16,6 +16,9 @@ from os import path
 
 
 class SimplePipeline:
+    TYPE_CALIBRATION_MATRIX = 0
+    TYPE_CAMERA = 1
+    TYPE_POINT = 2
 
     def __init__(self, dir, save_debug_visualization=False):
         self.dir = dir
@@ -50,9 +53,6 @@ class SimplePipeline:
         self.camera_matrix = np.array([[765.16859169, 0., 379.11876567],
                                        [0., 762.38664643, 497.22086655],
                                        [0., 0., 1.]])
-        # self.camera_matrix = np.array([[10, 0., 1],
-        #                                [0., 1, 100],
-        #                                [0., 0., 1.]])
 
         self.k_ = None
 
@@ -68,7 +68,8 @@ class SimplePipeline:
         prev_feature_pack_id = None
         prev_track_slice = None
 
-        stored_cameras = []
+        Rs = []
+        ts = []
         stored_points = {}
 
         comp_R = None
@@ -101,9 +102,10 @@ class SimplePipeline:
             #
             # # TODO: store everything for later use
             stored_points = self._store_new_points(stored_points, points_3d, points_indexes)
-            stored_cameras += [[rel_R, rel_t]]
+            Rs += [rel_R]
+            Rs += [rel_t]
 
-        a = 1
+        self._write_to_viz_file(self.camera_matrix, Rs, ts, using_camera_coordinate_system=False)
         # TODO: when all frames are processed, plot result
         # TODO: but to do that, first average point positions when there are multiple
 
@@ -331,6 +333,34 @@ class SimplePipeline:
     def _calculate_avarege_points_position(stored_points):
         for point_index, point_data in stored_points:
             stored_points['avg_point'] = stored_points[point_index]['accum'] / stored_points[point_index]['count']
+
+    @staticmethod
+    def _write_to_viz_file(camera_matrix, Rs, ts, points, using_camera_coordinate_system):
+        with open('out/viz_data.csv', 'w') as out_file:
+            out_file.write('{}\n')
+
+            def convert_and_save_line(line):
+                line = [str(item) for item in line]
+                out_file.write(','.join(line))
+                out_file.write('\n')
+
+            line_elements = [SimplePipeline.TYPE_CALIBRATION_MATRIX, 0] + list(camera_matrix.flatten())
+            convert_and_save_line(line_elements)
+
+            for index, (R, t) in enumerate(zip(Rs, ts)):
+                if using_camera_coordinate_system:
+                    t = np.matmul(R.transpose(), -t)
+                    R = R.transpose()
+
+                line_elements = [SimplePipeline.TYPE_CAMERA, index] + list(R.flatten()) + list(t.flatten())
+                convert_and_save_line(line_elements)
+
+            for point_id, point in points.items():
+                line_elements = [SimplePipeline.TYPE_POINT, point_id] + list(point['avg_point'].flatten())
+                if 'color' in point:
+                    line_elements += list(point['point_color'].flatten())
+
+                convert_and_save_line(line_elements)
 
 
 if __name__ == '__main__':
