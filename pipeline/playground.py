@@ -16,48 +16,38 @@ from math import pi, sqrt
 
 np.set_printoptions(3, suppress=True)
 
+TYPE_CALIBRATION_MATRIX = 0
+TYPE_CAMERA = 1
+TYPE_POINT = 2
 
-def playground_1():
-    # camera arbitraria
-    camera_matrix = np.array([
-        [200, 0.0, 1000],
-        [0.0, 200, 1000],
-        [0.0, 0.0, 1.0],
-    ], dtype=np.float_)
 
-    # cubo de pontos centrados em (10, 5, 0) de tamanho 2x2x2
-    points_3d = np.array(list(itertools.product([9, 11], [4, 6], [-1, 1])), dtype=np.float_)
+def write_to_viz_file(camera_matrix, Rs, ts, points, using_camera_coordinate_system):
+    with open('out/viz_data.csv', 'w') as out_file:
+        out_file.write('{}\n')
 
-    # matrizes de rotação para o posicionamento das cameras
-    r1 = cv2.Rodrigues(np.array([-pi/2, 0., 0.]))[0]
-    r2 = cv2.Rodrigues(np.array([0, -3*pi/2, 0]))[0]
+        def convert_and_save_line(line):
+            line = [str(item) for item in line]
+            out_file.write(','.join(line))
+            out_file.write('\n')
 
-    # vetores de translação das câmeras na base global
-    ts = np.array([
-        [10, 0, 0],
-        [15, 5, 0]
-    ], dtype=np.float_)
+        line_elements = [TYPE_CALIBRATION_MATRIX, 0] + list(camera_matrix.flatten())
+        convert_and_save_line(line_elements)
 
-    # vetores de rotação das cameras na base global
-    Rs = np.array([
-        r1,
-        np.matmul(r1, r2),
-    ])
+        for index, (R, t) in enumerate(zip(Rs, ts)):
+            # convert from camera to global coordinate system
+            if using_camera_coordinate_system:
+                t = np.matmul(R.transpose(), -t)
+                R = R.transpose()
 
-    # para cada câmera calcule a projeção de cada ponto e imprima
-    tracks = [None]*2
-    for index, (R, t) in enumerate(zip(Rs, ts)):
-        # convert to the camera base, important!
-        t_cam = np.matmul(R.transpose(), -t)
-        R_cam = R.transpose()
-        R_cam_vec = cv2.Rodrigues(R_cam)[0]
+            line_elements = [TYPE_CAMERA, index] + list((R).flatten()) + list((t).flatten())
+            convert_and_save_line(line_elements)
 
-        tracks[index] = cv2.projectPoints(points_3d, R_cam_vec, t_cam, camera_matrix, None)[0].squeeze()
-        for p3d, p2d in zip(points_3d, tracks[index]):
-            print(p3d, p2d)
-        print()
+        for point_id, point in points.items():
+            line_elements = [TYPE_POINT, point_id] + list(point['avg_point'].flatten())
+            if 'color' in point:
+                line_elements += list(point['point_color'].flatten())
 
-    tracks = np.array(tracks)
+            convert_and_save_line(line_elements)
 
     def _get_relative_movement(tracks, feature_pack_id):
         reconstruction_distance_threshold = 2
@@ -77,7 +67,7 @@ def playground_1():
             return [None] * 4
 
         E, five_pt_mask = cv2.findEssentialMat(trimmed_tracks[0], trimmed_tracks[1], camera_matrix, cv2.RANSAC,
-                                               # threshold=0.1
+                                               threshold=0.1
                                                )
 
         rep = int(round(20 * sum(five_pt_mask.squeeze()) / five_pt_mask.shape[0]))
@@ -89,14 +79,15 @@ def playground_1():
                                                              points1=trimmed_tracks[0],
                                                              points2=trimmed_tracks[1],
                                                              cameraMatrix=camera_matrix,
-                                                             distanceThresh=2,
-                                                             mask=five_pt_mask
+                                                             distanceThresh=100,
+                                                             mask=five_pt_mask.copy()
                                                              # mask=None
                                                              )
 
         rep = int(round(20 * sum(pose_mask.squeeze()) / pose_mask.shape[0]))
         irep = 20 - rep
-        print('Pose   --> {:2} / {:2}  {:2}'.format(sum(pose_mask.squeeze()), pose_mask.shape[0], '#' * rep + '_' * irep))
+        print(
+            'Pose   --> {:2} / {:2}  {:2}'.format(sum(pose_mask.squeeze()), pose_mask.shape[0], '#' * rep + '_' * irep))
 
         # print("R: {}".format(R))
         # print("t: {}".format(t))
@@ -114,80 +105,73 @@ def playground_1():
 
         return R, t, points_3d, point_indexes
 
-    _get_relative_movement(tracks, 0)
 
-
-def playground_2():
-    TYPE_CALIBRATION_MATRIX = 0
-    TYPE_CAMERA = 1
-    TYPE_POINT = 2
-    # define TYPE_POINT 2
-    point_coordinates = np.array(list(itertools.product([8, 9, 10, 11, 12], [4, 5, 6], [0])) +
-                                 list(itertools.product([9, 10, 11], [4, 5, 6], [1])) +
-                                 list(itertools.product([10], [4, 5, 6], [2]))
-                                 )
-    # point_coordinates = np.array(list(itertools.product([9, 10, 11], [4, 5, 6], [-1, 0, 1])))
-    points = {index:{'avg_point':point} for index, point in enumerate(point_coordinates)}
-
-    # matrizes de rotação para o posicionamento das cameras na base da camera
-    r0_1 = cv2.Rodrigues(np.array([pi / 2, 0., 0.]))[0]
-    r1_3 = cv2.Rodrigues(np.array([pi / 2, 0, 0]))[0]
-    r1_4 = cv2.Rodrigues(np.array([0., 0, - pi / 2]))[0]
-
-    # vetores de translação das câmeras na case da camera
-    ts = np.array([
-        [-10, 0, 0],
-        [-5, 0, 15],
+def synthetic_pipeline():
+    # camera arbitraria
+    camera_matrix = np.array([
+        [200, 0.0, 1000],
+        [0.0, 200, 1000],
+        [0.0, 0.0, 1.0],
     ], dtype=np.float_)
 
-    # vetores de rotação das cameras baseados na multiplicação e conversão das matrizes de rotação apropriadas
+    # cubo de pontos centrados em (10, 5, 0) de tamanho 2x2x2
+    # points_3d = np.array(list(itertools.product([9, 11], [4, 6], [-1, 1])), dtype=np.float_)
+    points_3d = np.array(list(itertools.product([8, 9, 10, 11, 12], [4, 5, 6], [0])) +
+                         list(itertools.product([9, 10, 11], [4, 5, 6], [1])) +
+                         list(itertools.product([10], [4, 5, 6], [2]))
+                         , dtype=np.float_)
+
+    # matrizes de rotação para o posicionamento das cameras
+    r1 = cv2.Rodrigues(np.array([-pi / 2, 0., 0.]))[0]
+    r2 = cv2.Rodrigues(np.array([0, -pi / 4, 0]))[0]
+
+    # vetores de translação das câmeras na base global
+    ts = np.array([
+        [10, 0, 0],
+        [15, 5, 0]
+    ], dtype=np.float_)
+
+    # vetores de rotação das cameras na base global
     Rs = np.array([
-        r0_1,
-        np.matmul(r1_3, r1_4),
+        r1,
+        np.matmul(r1, r2),
     ])
 
-    camera_matrix = np.array([[765.16859169, 0., 379.11876567],
-                              [0., 762.38664643, 497.22086655],
-                              [0., 0., 1.]])
+    # para cada câmera calcule a projeção de cada ponto e imprima
+    tracks = [None] * 2
+    for index, (R, t) in enumerate(zip(Rs, ts)):
+        # convert to the camera base, important!
+        t_cam = np.matmul(R.transpose(), -t)
+        R_cam = R.transpose()
+        R_cam_vec = cv2.Rodrigues(R_cam)[0]
 
-    def write_to_viz_file(camera_matrix, Rs, ts, points):
-        with open('out/viz_data.csv', 'w') as out_file:
-            out_file.write('{}\n')
+        tracks[index] = cv2.projectPoints(points_3d, R_cam_vec, t_cam, camera_matrix, None)[0].squeeze()
+        for p3d, p2d in zip(points_3d, tracks[index]):
+            print(p3d, p2d)
+        print()
 
-            def convert_and_save_line(line):
-                line = [str(item) for item in line]
-                out_file.write(','.join(line))
-                out_file.write('\n')
+    tracks = np.array(tracks)
 
-            line_elements = [TYPE_CALIBRATION_MATRIX, 0] + list(camera_matrix.flatten())
-            convert_and_save_line(line_elements)
+    R, t, points_3d, _ = _get_relative_movement(tracks, 0)
 
-            for index, (R, t) in enumerate(zip(Rs, ts)):
-                # convert from camera to global coordinate system
-                t = np.matmul(R.transpose(), -t)
-                R = R.transpose()
+    scale = 10
 
-                line_elements = [TYPE_CAMERA, index] + list((R).flatten()) + list((t).flatten())
-                convert_and_save_line(line_elements)
+    R0 = cv2.Rodrigues(np.array([pi / 2, 0., 0.]))[0]
+    t0 = [[0], [0], [0]]
+    Rs = np.array([R0, np.matmul(R0, R.transpose())])
+    ts = np.array([t0, np.matmul(Rs[1], -t)])
 
-            for point_id, point in points.items():
-                line_elements = [TYPE_POINT, point_id] + list(point['avg_point'].flatten())
-                if 'color' in point:
-                    line_elements += list(point['point_color'].flatten())
+    points = [np.matmul(Rs[0], point) for point in points_3d]
+    points = {index: {'avg_point': point} for index, point in enumerate(points)}
 
-                convert_and_save_line(line_elements)
+    print(Rs)
+    print(ts)
 
-    write_to_viz_file(camera_matrix, Rs, ts, points)
-
-    R = Rs[1]
-    t = ts[1]
+    write_to_viz_file(camera_matrix, Rs, ts, points, False)
 
     os.system(os.path.join(os.getcwd(), 'visualizer', 'cmake-build-debug', 'visualizer') + ' ' +
               os.path.join(os.getcwd(), 'out', 'viz_data.csv'))
 
 
 if __name__ == '__main__':
-    playground_1()
-    playground_2()
-
-
+    synthetic_pipeline()
