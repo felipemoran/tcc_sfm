@@ -24,7 +24,7 @@
 
 
 #define _USE_OPENCV true
-#include <MVS/Interface.h>
+//#include <MVS/Interface.h>
 
 using namespace cv;
 using namespace cv::utils::logging;
@@ -163,8 +163,8 @@ private:
 //                    t = Mat(3, 3, CV_32FC3, t_values);
 //                    cout << "DONE" << endl;
 
-                    cout << "R: " << R << endl;
-                    cout << "t: " << t << endl;
+//                    cout << "R: " << R << endl;
+//                    cout << "t: " << t << endl;
 
                     Rs.push_back(R);
                     Ts.push_back(t);
@@ -211,15 +211,13 @@ private:
 
         // Create 3D windows
         viz::Viz3d window("Coordinate Frame");
-        window.setWindowSize(Size(500, 500));
+        window.setWindowSize(Size(2500, 1500));
         window.setWindowPosition(Point(150, 150));
         window.setBackgroundColor(viz::Color::white());
 
         // Recovering cameras
         vector<Affine3d> path;
         for (size_t index = 0; index < Rs.size(); ++index) {
-            cout << Rs[index] << endl;
-            cout << Ts[index] << endl;
             path.push_back(Affine3d(Rs[index], Ts[index]));
         }
 
@@ -228,8 +226,9 @@ private:
         cloud_widget.setRenderingProperty( cv::viz::POINT_SIZE, 8 );
         window.showWidget("point_cloud", cloud_widget);
         // Add cameras
-        window.showWidget("cameras_frames_and_lines", viz::WTrajectory(path, viz::WTrajectory::BOTH, 0.1, viz::Color::black()));
-        window.showWidget("cameras_frustums", viz::WTrajectoryFrustums(path, K, 1, viz::Color::navy()));
+        window.showWidget("camera_path", viz::WTrajectory(path, viz::WTrajectory::PATH, 0.1, viz::Color::black()));
+        window.showWidget("camera_frames", viz::WTrajectory(path, viz::WTrajectory::FRAMES, 0.1, viz::Color::black()));
+        window.showWidget("cameras_frustums", viz::WTrajectoryFrustums(path, K, .1, viz::Color::navy()));
         window.setViewerPose(path[0]);
 
         /// Wait for key 'q' to close the window
