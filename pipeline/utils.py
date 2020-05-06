@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 TYPE_CALIBRATION_MATRIX = 0
 TYPE_CAMERA = 1
@@ -44,3 +45,13 @@ def progress_bar(realized, total, length=20):
         realized,
         total,
         '#' * rep + '_' * (length - rep))
+
+
+def compose_RTs(rel_R, rel_T, comp_R, comp_T):
+    comp_T = comp_T + np.matmul(comp_R, rel_T)
+    comp_R = np.matmul(comp_R, rel_R)
+    return comp_R, comp_T
+
+
+def translate_points_to_base_frame(comp_R, comp_T, points):
+    return (comp_T + np.matmul(comp_R, points.transpose())).transpose()

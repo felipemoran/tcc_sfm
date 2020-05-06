@@ -42,7 +42,7 @@ class SyntheticPipelineMK1(BasePipeline):
 
         # matrizes de rotação para o posicionamento das cameras
         r1 = cv2.Rodrigues(np.array([-pi / 2, 0., 0.]))[0]
-        r2 = cv2.Rodrigues(np.array([0, -pi / 2, 0]))[0]
+        r2 = cv2.Rodrigues(np.array([0, -pi / 4, 0]))[0]
         r3 = cv2.Rodrigues(np.array([0, -pi / 2, 0]))[0]
 
         # vetores de translação das câmeras na base global
@@ -51,6 +51,7 @@ class SyntheticPipelineMK1(BasePipeline):
             [15, 5, 0],
             [10, 10, 0],
             [5, 5, 0],
+            [10, 5, 5],
         ], dtype=np.float_)
 
         # vetores de rotação das cameras na base global
@@ -59,6 +60,7 @@ class SyntheticPipelineMK1(BasePipeline):
             np.matmul(r1, r3),
             np.matmul(r1, np.matmul(r3, r2)),
             np.matmul(r1, np.matmul(r3, np.matmul(r3, r3))),
+            np.matmul(r1, r1),
         ])
 
         # para cada câmera calcule a projeção de cada ponto e imprima
@@ -89,10 +91,9 @@ class SyntheticPipelineMK1(BasePipeline):
                 point_indexes,
             )
 
-            points_3d = (comp_T + np.matmul(comp_R, ret_points_3d.transpose())).transpose()
+            points_3d = utils.translate_points_to_base_frame(comp_R, comp_T, ret_points_3d)
 
-            comp_T = comp_T + np.matmul(comp_R, rel_T)
-            comp_R = np.matmul(comp_R, rel_R)
+            comp_R, comp_T = utils.compose_RTs(rel_R, rel_T, comp_R, comp_T)
 
             # store everything for later use
             Rs += [comp_R]

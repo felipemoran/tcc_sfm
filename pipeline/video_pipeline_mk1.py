@@ -85,17 +85,16 @@ class VideoPipelineMK1(BasePipeline):
                 continue
 
             # translate 3D point positiona back from camera 1 frame to reference frame
-            abs_points_3d = (comp_T + np.matmul(comp_R, rel_points_3d.transpose())).transpose()
-            # abs_points_3d = [comp_T + np.matmul(comp_R, point.reshape(3, 1)) for point in rel_points_3d]
+            abs_points_3d = utils.translate_points_to_base_frame(comp_R, comp_T, rel_points_3d)
+            # abs_points_3d = (comp_T + np.matmul(comp_R, rel_points_3d.transpose())).transpose()
 
             # translate camera position back to reference frame
-            comp_R = np.matmul(comp_R, rel_R.transpose())
-            comp_T = comp_T + np.matmul(comp_R, -rel_T)
+            comp_R, comp_T = utils.compose_RTs(rel_R, rel_T, comp_R, comp_T)
 
             # store everything for later use
             stored_points = self._store_new_points(stored_points, abs_points_3d, points_indexes)
-            Rs += [rel_R]
-            Ts += [rel_T]
+            Rs += [comp_R]
+            Ts += [comp_T]
 
         points = np.array([
             point_data['avg_point'] for _, point_data in stored_points.items()
