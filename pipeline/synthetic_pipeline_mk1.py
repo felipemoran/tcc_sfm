@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from math import pi, sqrt
 from pipeline import utils
 from pipeline.base_pipeline import BasePipeline
+from pipeline.video_pipeline_mk1 import VideoPipelineMK1
 
 np.set_printoptions(3, suppress=True)
 
@@ -23,7 +24,7 @@ TYPE_CAMERA = 1
 TYPE_POINT = 2
 
 
-class SyntheticPipelineMK1(BasePipeline):
+class SyntheticPipelineMK1(VideoPipelineMK1):
     def __init__(self):
         # camera arbitraria
         self.camera_matrix = np.array([
@@ -32,7 +33,14 @@ class SyntheticPipelineMK1(BasePipeline):
             [0.0, 0.0, 1.0],
         ], dtype=np.float_)
 
-    def run(self):
+        self.dir = None
+
+    def _get_video(self, file_path):
+        return None, None
+
+    def _process_next_frame(self, file):
+        # Replaces the original function to generate synthetic data while maintaining everything else
+
         # points_3d = np.array(list(itertools.product([9, 10, 11], [4, 5, 6], [-1, 0, 1])), dtype=np.float_)
         # points_3d = np.array(list(itertools.product([9, 11], [4, 6], [-1, 1])), dtype=np.float_)
         points_3d = np.array(list(itertools.product([8, 9, 10, 11, 12], [4, 5, 6], [0])) +
@@ -63,6 +71,11 @@ class SyntheticPipelineMK1(BasePipeline):
             np.matmul(r1, r1),
         ])
 
+        # mimic otiginal function variables
+        is_new_feature_set = True
+        feature_pack_id = 0
+        frame_counter = 0
+
         # para cada câmera calcule a projeção de cada ponto e imprima
         tracks = [None] * len(Rs)
         for index, (R, t) in enumerate(zip(Rs, Ts)):
@@ -71,42 +84,12 @@ class SyntheticPipelineMK1(BasePipeline):
             R_cam = R.transpose()
             R_cam_vec = cv2.Rodrigues(R_cam)[0]
 
-            tracks[index] = cv2.projectPoints(points_3d, R_cam_vec, t_cam, self.camera_matrix, None)[0].squeeze()
+            track_slice = cv2.projectPoints(points_3d, R_cam_vec, t_cam, self.camera_matrix, None)[0].squeeze()
+            # tracks[index] = track_slice
+            yield frame_counter, feature_pack_id, track_slice, is_new_feature_set
 
-        tracks = np.array(tracks)
-
-        comp_R = np.eye(3)
-        comp_T = np.zeros((3, 1))
-        Rs = [comp_R]
-        Ts = [comp_T]
-
-        points_3d = None
-        point_indexes = None
-
-        for pair_index in range(len(tracks) - 1):
-
-            rel_R, rel_T, ret_points_3d, ret_point_indexes = self._get_relative_movement(
-                tracks[pair_index:pair_index + 2],
-                None,
-                point_indexes,
-            )
-
-            points_3d = utils.translate_points_to_base_frame(comp_R, comp_T, ret_points_3d)
-
-            comp_R, comp_T = utils.compose_RTs(rel_R, rel_T, comp_R, comp_T)
-
-            # store everything for later use
-            Rs += [comp_R]
-            Ts += [comp_T]
-
-        print("Rs: ")
-        [print(i) for i in Rs]
-        print()
-        print("Ts: ")
-        [print(i) for i in Ts]
-
-        utils.write_to_viz_file(self.camera_matrix, Rs, Ts, points_3d)
-        utils.call_viz()
+            is_new_feature_set = False
+            frame_counter += 1
 
 
 if __name__ == '__main__':

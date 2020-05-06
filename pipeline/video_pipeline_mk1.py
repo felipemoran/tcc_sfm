@@ -27,7 +27,7 @@ class VideoPipelineMK1(BasePipeline):
         # params for ShiTomasi corner detection
         self.feature_params = {
             "maxCorners": 200,
-            "qualityLevel": 0.3,
+            "qualityLevel": 0.7,
             "minDistance": 7,
             "blockSize": 7
         }
@@ -95,6 +95,11 @@ class VideoPipelineMK1(BasePipeline):
             stored_points = self._store_new_points(stored_points, abs_points_3d, points_indexes)
             Rs += [comp_R]
             Ts += [comp_T]
+
+            # prepare everything for next round
+            prev_frame_id = next_frame_id
+            prev_feature_pack_id = next_feature_pack_id
+            prev_track_slice = next_track_slice
 
         points = np.array([
             point_data['avg_point'] for _, point_data in stored_points.items()
