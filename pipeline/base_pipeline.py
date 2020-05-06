@@ -77,34 +77,7 @@ class BasePipeline:
                     reset_features = True
 
                 if self.save_debug_visualization:
-                    # if mask is None:
-                    #     mask = np.zeros_like(next_frame_color)
-                    mask = np.zeros_like(next_frame_color)
-
-                    for feature_index, feature_status in enumerate(status):
-                        if feature_status[0] == 0:
-                            continue
-                        next_x, next_y = next_features[feature_index]
-                        prev_x, prev_y = prev_features[feature_index]
-
-                        mask = cv2.line(mask,
-                                        (next_x, next_y),
-                                        (prev_x, prev_y),
-                                        self.debug_colors[feature_index].tolist(),
-                                        2)
-                        next_frame_color = cv2.circle(next_frame_color,
-                                                      (next_x, next_y),
-                                                      5,
-                                                      self.debug_colors[track_indexes[feature_index]].tolist(),
-                                                      -1)
-
-                    img = cv2.add(next_frame_color, mask)
-
-                    cv2.imshow('frame', img)
-                    time.sleep(0.02)
-                    k = cv2.waitKey(30) & 0xff
-                    if k == 27:
-                        break
+                    self._display_KLT_debug_frame(next_frame_color, status, next_features, prev_features, track_indexes)
 
             # generate track slice
             track_indexes, next_features, track_slice = self._features_to_track_slice(
@@ -121,6 +94,33 @@ class BasePipeline:
             prev_features = next_features
 
             is_new_feature_set = False
+
+    def _display_KLT_debug_frame(self, next_frame_color, status, next_features, prev_features, track_indexes):
+        # if mask is None:
+        #     mask = np.zeros_like(next_frame_color)
+        mask = np.zeros_like(next_frame_color)
+
+        for feature_index, feature_status in enumerate(status):
+            if feature_status[0] == 0:
+                continue
+            next_x, next_y = next_features[feature_index]
+            prev_x, prev_y = prev_features[feature_index]
+
+            mask = cv2.line(mask,
+                            (next_x, next_y),
+                            (prev_x, prev_y),
+                            self.debug_colors[feature_index].tolist(),
+                            2)
+            next_frame_color = cv2.circle(next_frame_color,
+                                          (next_x, next_y),
+                                          5,
+                                          self.debug_colors[track_indexes[feature_index]].tolist(),
+                                          -1)
+
+        img = cv2.add(next_frame_color, mask)
+
+        cv2.imshow('frame', img)
+        time.sleep(0.02)
 
     @staticmethod
     def _features_to_track_slice(num_features, track_indexes, frame_features, status):
@@ -177,8 +177,8 @@ class BasePipeline:
             return [None] * 4
 
         # We have no 3D point info so we calculate based on the two cameras
-        # E, five_pt_mask = cv2.findEssentialMat(tracks[0], tracks[1], self.camera_matrix, cv2.RANSAC, threshold=1, prob=0.95)
-        E, five_pt_mask = cv2.findEssentialMat(tracks[0], tracks[1], self.camera_matrix, cv2.RANSAC)
+        E, five_pt_mask = cv2.findEssentialMat(tracks[0], tracks[1], self.camera_matrix, cv2.RANSAC, threshold=1, prob=0.99)
+        # E, five_pt_mask = cv2.findEssentialMat(tracks[0], tracks[1], self.camera_matrix, cv2.RANSAC)
 
         print('P: {}'.format(utils.progress_bar(sum(five_pt_mask.squeeze()), five_pt_mask.shape[0])), end='   ')
         result = cv2.recoverPose(E=E,
