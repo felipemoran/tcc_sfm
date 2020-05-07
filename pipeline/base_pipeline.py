@@ -146,11 +146,11 @@ class BasePipeline:
 
         return track_indexes, frame_features, track_slice
 
-    def _get_relative_movement(self, tracks, points_3d, point_indexes, reconstruction_distance_threshold=10):
+    def _get_relative_movement(self, tracks, points_3d, point_indexes):
         assert len(tracks) == 2, 'Reconstruction from more than 2 views not yet implemented'
 
         if points_3d is None:
-            R, T, points_3d, point_indexes = self._get_pose_from_two_tracks(tracks, reconstruction_distance_threshold)
+            R, T, points_3d, point_indexes = self._get_pose_from_two_tracks(tracks)
 
         else:
             R, T = self._get_pose_from_points_and_projection(tracks[1], points_3d, point_indexes)
@@ -165,7 +165,7 @@ class BasePipeline:
 
         return R, t
 
-    def _get_pose_from_two_tracks(self, tracks, reconstruction_distance_threshold=10):
+    def _get_pose_from_two_tracks(self, tracks):
         # Remove all points that don'T have correspondence between frames
         num_points = tracks.shape[1]
         track_mask = [bool((tracks[:, point_id] > 0).all()) for point_id in range(num_points)]
@@ -177,7 +177,13 @@ class BasePipeline:
             return [None] * 4
 
         # We have no 3D point info so we calculate based on the two cameras
-        E, five_pt_mask = cv2.findEssentialMat(tracks[0], tracks[1], self.camera_matrix, cv2.RANSAC, threshold=1, prob=0.99)
+        E, five_pt_mask = cv2.findEssentialMat(
+            tracks[0],
+            tracks[1],
+            self.camera_matrix,
+            cv2.RANSAC,
+            threshold=self.find_essential_mat_threshold,
+            prob=self.find_essential_mat_prob)
         # E, five_pt_mask = cv2.findEssentialMat(tracks[0], tracks[1], self.camera_matrix, cv2.RANSAC)
 
         print('P: {}'.format(utils.progress_bar(sum(five_pt_mask.squeeze()), five_pt_mask.shape[0])), end='   ')
@@ -185,7 +191,7 @@ class BasePipeline:
                                  points1=tracks[0],
                                  points2=tracks[1],
                                  cameraMatrix=self.camera_matrix,
-                                 distanceThresh=reconstruction_distance_threshold,
+                                 distanceThresh=self.recover_pose_reconstruction_distance_threshold,
                                  mask=five_pt_mask.copy()
                                  # mask=None
                                  )

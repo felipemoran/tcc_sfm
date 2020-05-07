@@ -22,20 +22,20 @@ class VideoPipelineMK1(BasePipeline):
         self.num_frames_initial_estimation = 10
 
         # Number of frames between baseline reset. Hack to avoid further frames having no or few features
-        self.feature_reset_rate = 10
+        self.feature_reset_rate = 100
 
         # params for ShiTomasi corner detection
         self.feature_params = {
             "maxCorners": 200,
-            "qualityLevel": 0.7,
-            "minDistance": 7,
-            "blockSize": 7
+            "qualityLevel": 0.5,
+            "minDistance": 10,
+            "blockSize": 10
         }
 
         # Parameters for lucas kanade optical flow
         self.lk_params = {
             "winSize": (15, 15),
-            "maxLevel": 2,
+            "maxLevel": 3,
             "criteria": (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03),
         }
 
@@ -47,7 +47,9 @@ class VideoPipelineMK1(BasePipeline):
 
         self.k_ = None
 
-        self.reconstruction_distance_threshold = 50
+        self.recover_pose_reconstruction_distance_threshold = 50
+        self.find_essential_mat_threshold = 3
+        self.find_essential_mat_prob = 0.98
 
         self.debug_colors = np.random.randint(0, 255, (self.feature_params['maxCorners'], 3))
 

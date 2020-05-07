@@ -34,6 +34,7 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
         ], dtype=np.float_)
 
         self.dir = None
+        self.reconstruction_distance_threshold = 50
 
     def _get_video(self, file_path):
         return None, None
