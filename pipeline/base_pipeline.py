@@ -4,10 +4,14 @@ import time
 from os import path
 import numpy as np
 
+from abc import ABC, abstractmethod
 from pipeline import utils
 
 
 class BasePipeline:
+    def run(self):
+        assert False, 'This method needs to be implemented'
+
     @staticmethod
     def _get_video(file_path):
         print('Looking for files in {}'.format(dir))
@@ -163,6 +167,8 @@ class BasePipeline:
         R = cv2.Rodrigues(R)[0].transpose()
         t = np.matmul(R, -t)
 
+        print()
+
         return R, t
 
     def _get_pose_from_two_tracks(self, tracks):
@@ -213,7 +219,6 @@ class BasePipeline:
 
         # create point index mask
         point_indexes = np.array(list(range(num_points)))[track_mask][final_mask]
-
 
         assert (len(points_3d) == len(point_indexes))
 

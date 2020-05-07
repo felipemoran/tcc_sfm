@@ -53,7 +53,10 @@ class VideoPipelineMK2(BasePipeline):
                                        [0., 762.38664643, 497.22086655],
                                        [0., 0., 1.]])
 
-        self.reconstruction_distance_threshold = 50
+        self.recover_pose_reconstruction_distance_threshold = 50
+        self.find_essential_mat_threshold = 3
+        self.find_essential_mat_prob = 0.98
+
         self.debug_colors = np.random.randint(0, 255, (self.feature_params['maxCorners'], 3))
 
     def run(self):
@@ -98,6 +101,11 @@ class VideoPipelineMK2(BasePipeline):
 
             Rs += [R]
             Ts += [T]
+
+            # prepare everything for next round
+            prev_frame_id = next_frame_id
+            prev_feature_pack_id = next_feature_pack_id
+            prev_track_slice = next_track_slice
 
         # when all frames are processed, plot result
         utils.write_to_viz_file(self.camera_matrix, Rs, Ts, stored_points)

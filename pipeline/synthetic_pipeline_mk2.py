@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 from math import pi, sqrt
 from pipeline import utils
 from pipeline.base_pipeline import BasePipeline
+from pipeline.synthetic_pipeline_mk1 import SyntheticPipelineMK1
+from pipeline.video_pipeline_mk2 import VideoPipelineMK2
 
 np.set_printoptions(3, suppress=True)
 
@@ -23,91 +25,33 @@ TYPE_CAMERA = 1
 TYPE_POINT = 2
 
 
-class SyntheticPipelineMK2(BasePipeline):
+class SyntheticPipelineMK2(SyntheticPipelineMK1, VideoPipelineMK2):
     def __init__(self):
+        SyntheticPipelineMK1.__init__(self)
         # camera arbitraria
         self.camera_matrix = np.array([
             [500, 0.0, 500],
             [0.0, 500, 500],
             [0.0, 0.0, 1.0],
         ], dtype=np.float_)
+        self.dir = None
 
-    def run(self):
-        # cubo de pontos centrados em (10, 5, 0) de tamanho 2x2x2
-        # points_3d = np.array(list(itertools.product([9, 10, 11], [4, 5, 6], [-1, 0, 1])), dtype=np.float_)
-        points_3d = np.array(list(itertools.product([8, 9, 10, 11, 12], [4, 5, 6], [0])) +
-                             list(itertools.product([8, 9, 10], [4, 5], [1])) +
-                             list(itertools.product([8], [4], [2]))
-                             , dtype=np.float_)
+    def _process_next_frame(self, file):
+        return SyntheticPipelineMK1._process_next_frame(self, None)
 
-        # matrizes de rotação para o posicionamento das cameras
-        r1 = cv2.Rodrigues(np.array([-pi / 2, 0., 0.]))[0]
-        r2 = cv2.Rodrigues(np.array([0, -pi / 4, 0]))[0]
-        r3 = cv2.Rodrigues(np.array([0, -pi / 2, 0]))[0]
-
+    def _get_synthetic_camera_translations(self):
         # vetores de translação das câmeras na base global
         Ts = np.array([
             [10, 0, 0],
-            [25, 5, 0],
+            [20, 5, 0],
             [10, 12.5, 0],
             [5, 5, 0],
             [10, 5, 5],
         ], dtype=np.float_)
+        return Ts
 
-        # vetores de rotação das cameras na base global
-        Rs = np.array([
-            r1,
-            np.matmul(r1, r3),
-            np.matmul(r1, np.matmul(r3, r2)),
-            np.matmul(r1, np.matmul(r3, np.matmul(r3, r3))),
-            np.matmul(r1, r1),
-        ])
-
-        # para cada câmera calcule a projeção de cada ponto e imprima
-        tracks = [None] * len(Rs)
-        for index, (R, t) in enumerate(zip(Rs, Ts)):
-            # convert to the camera base, important!
-            t_cam = np.matmul(R.transpose(), -t)
-            R_cam = R.transpose()
-            R_cam_vec = cv2.Rodrigues(R_cam)[0]
-
-            tracks[index] = cv2.projectPoints(points_3d, R_cam_vec, t_cam, self.camera_matrix, None)[0].squeeze()
-
-        tracks = np.array(tracks)
-
-        comp_R = np.eye(3)
-        comp_t = np.zeros((3, 1))
-        Rs = [comp_R]
-        Ts = [comp_t]
-
-        points_3d = None
-        point_indexes = None
-        points = {}
-
-        for pair_index in range(len(tracks) - 1):
-
-            rel_R, rel_t, ret_points_3d, ret_point_indexes = self._get_relative_movement(
-                tracks[pair_index:pair_index + 2],
-                points_3d,
-                point_indexes,
-            )
-
-            if ret_points_3d is not None:
-                points_3d = ret_points_3d
-                point_indexes = ret_point_indexes
-
-            # store everything for later use
-            Rs += [rel_R]
-            Ts += [rel_t]
-
-        print("Rs: ")
-        [print(i) for i in Rs]
-        print()
-        print("Ts: ")
-        [print(i) for i in Ts]
-
-        utils.write_to_viz_file(self.camera_matrix, Rs, Ts, ret_points_3d)
-        utils.call_viz()
+    def run(self):
+        return VideoPipelineMK2.run(self)
 
 
 if __name__ == '__main__':
