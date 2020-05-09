@@ -26,6 +26,8 @@ TYPE_POINT = 2
 
 class SyntheticPipelineMK1(VideoPipelineMK1):
     def __init__(self):
+        super().__init__(None)
+
         # camera arbitraria
         self.camera_matrix = np.array([
             [500, 0.0, 500],
@@ -34,9 +36,9 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
         ], dtype=np.float_)
 
         self.dir = None
-        self.find_essential_mat_threshold = 2
-        self.find_essential_mat_prob = 0.999
-        self.recover_pose_reconstruction_distance_threshold = 50
+        # self.find_essential_mat_threshold = 2
+        # self.find_essential_mat_prob = 0.999
+        # self.recover_pose_reconstruction_distance_threshold = 50
 
     def _get_video(self, file_path):
         return None, None
@@ -54,8 +56,6 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
         feature_pack_id = 0
         frame_counter = 0
 
-        # para cada câmera calcule a projeção de cada ponto e imprima
-        tracks = [None] * len(Rs)
         for index, (R, t) in enumerate(zip(Rs, Ts)):
             # convert to the camera base, important!
             t_cam = np.matmul(R.transpose(), -t)
@@ -63,8 +63,9 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
             R_cam_vec = cv2.Rodrigues(R_cam)[0]
 
             track_slice = cv2.projectPoints(points_3d, R_cam_vec, t_cam, self.camera_matrix, None)[0].squeeze()
-            # tracks[index] = track_slice
-            yield frame_counter, feature_pack_id, track_slice, is_new_feature_set
+            track_index_mask = np.arange(len(track_slice))
+
+            yield track_slice, track_index_mask, is_new_feature_set
 
             is_new_feature_set = False
             frame_counter += 1

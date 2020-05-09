@@ -25,6 +25,9 @@ def write_to_viz_file(camera_matrix, Rs, Ts, points):
             convert_and_save_line(line_elements)
 
         for point_id, point in enumerate(points):
+            if np.isnan(point).any():
+                continue
+
             line_elements = [TYPE_POINT, point_id] + list(point.flatten())
             # if 'color' in point:
             #     line_elements += list(point['point_color'].flatten())
@@ -48,9 +51,9 @@ def progress_bar(realized, total, length=20):
 
 
 def compose_RTs(rel_R, rel_T, comp_R, comp_T):
-    comp_T = comp_T + np.matmul(comp_R, rel_T)
-    comp_R = np.matmul(comp_R, rel_R)
-    return comp_R, comp_T
+    res_T = comp_T + np.matmul(comp_R, rel_T)
+    res_R = np.matmul(comp_R, rel_R)
+    return res_R, res_T
 
 
 def translate_points_to_base_frame(comp_R, comp_T, points):

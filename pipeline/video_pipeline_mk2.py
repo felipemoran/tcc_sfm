@@ -75,17 +75,12 @@ class VideoPipelineMK2(BasePipeline):
         stored_points = np.zeros((0, 3))
 
         # Loop through frames (using generators)
-        for (next_frame_id, next_feature_pack_id, next_track_slice, is_new_feature_set) \
-                in self._process_next_frame(file):
+        for next_track_slice, next_track_slice_index_mask, is_new_feature_set in self._process_next_frame(file):
             if is_new_feature_set:
-                prev_frame_id = next_frame_id
-                prev_feature_pack_id = next_feature_pack_id
                 prev_track_slice = next_track_slice
 
                 assert points_3d is None, 'Resetting KLT features is not yet implemented'
                 continue
-
-            assert prev_feature_pack_id == next_feature_pack_id
 
             if points_3d is None:
                 R, T, points_3d, point_indexes = self._get_pose_from_two_tracks(
@@ -97,14 +92,15 @@ class VideoPipelineMK2(BasePipeline):
 
                 stored_points = np.append(stored_points, points_3d, axis=0)
             else:
-                R, T = self._get_pose_from_points_and_projection(next_track_slice, points_3d, point_indexes)
+                # check if a mask is needed for track slice or points_3d
+                track_slice = next_track_slice[point_indexes]
+                not_nan_mask = (~np.isnan(track_slice)).any(axis=1)
+                R, T = self._get_pose_from_points_and_projection(track_slice[not_nan_mask], points_3d[not_nan_mask])
 
             Rs += [R]
             Ts += [T]
 
             # prepare everything for next round
-            prev_frame_id = next_frame_id
-            prev_feature_pack_id = next_feature_pack_id
             prev_track_slice = next_track_slice
 
         # when all frames are processed, plot result

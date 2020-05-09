@@ -22,7 +22,7 @@ class VideoPipelineMK1(BasePipeline):
         self.num_frames_initial_estimation = 10
 
         # Number of frames between baseline reset. Hack to avoid further frames having no or few features
-        self.feature_reset_rate = 100
+        self.feature_reset_rate = 10
 
         # params for ShiTomasi corner detection
         self.feature_params = {
@@ -68,25 +68,23 @@ class VideoPipelineMK1(BasePipeline):
         comp_R = Rs[0]
         comp_T = Ts[0]
 
+        feature_set_counter = 0
+
         # Loop through frames (using generators)
-        for (next_frame_id, next_feature_pack_id, next_track_slice, is_new_feature_set) \
-                in self._process_next_frame(file):
+        for next_track_slice, next_track_slice_index_mask, is_new_feature_set in self._process_next_frame(file):
             if is_new_feature_set:
-                prev_frame_id = next_frame_id
-                prev_feature_pack_id = next_feature_pack_id
+                feature_set_counter += 1
                 prev_track_slice = next_track_slice
                 continue
-
-            assert prev_feature_pack_id == next_feature_pack_id
 
             tracks = np.array([prev_track_slice, next_track_slice])
 
             # calculate camera 2 position relative to camera 1
-            rel_R, rel_T, rel_points_3d, points_indexes = self._get_relative_movement(tracks, None, next_feature_pack_id)
+            rel_R, rel_T, rel_points_3d, points_indexes = self._get_pose_from_two_tracks(tracks)
             if rel_R is None:
                 continue
 
-            # translate 3D point positiona back from camera 1 frame to reference frame
+            # translate 3D point position back from camera 1 frame to reference frame
             abs_points_3d = utils.translate_points_to_base_frame(comp_R, comp_T, rel_points_3d)
             # abs_points_3d = (comp_T + np.matmul(comp_R, rel_points_3d.transpose())).transpose()
 
@@ -94,27 +92,24 @@ class VideoPipelineMK1(BasePipeline):
             comp_R, comp_T = utils.compose_RTs(rel_R, rel_T, comp_R, comp_T)
 
             # store everything for later use
-            stored_points = self._store_new_points(stored_points, abs_points_3d, points_indexes)
+            stored_points = self._store_new_points(stored_points, abs_points_3d, points_indexes, feature_set_counter)
             Rs += [comp_R]
             Ts += [comp_T]
 
             # prepare everything for next round
-            prev_frame_id = next_frame_id
-            prev_feature_pack_id = next_feature_pack_id
             prev_track_slice = next_track_slice
 
-        points = np.array([
-            point_data['avg_point'] for _, point_data in stored_points.items()
-        ])
+        points = np.array([point_data['avg_point'] for _, point_data in stored_points.items()])
 
         utils.write_to_viz_file(self.camera_matrix, Rs, Ts, points)
         utils.call_viz()
 
     # =================== INTERNAL FUNCTIONS ===========================================================================
 
-    @staticmethod
-    def _store_new_points(stored_points, points_3d, points_indexes):
+    def _store_new_points(self, stored_points, points_3d, points_indexes, feature_set_counter):
         for point_index, point in zip(points_indexes, points_3d):
+            point_index += feature_set_counter * self.feature_params['maxCorners']
+
             if point_index not in stored_points:
                 stored_points[point_index] = {'accum': point, 'count': 1}
             else:
