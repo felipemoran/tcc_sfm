@@ -91,7 +91,7 @@ class VideoPipelineMK3(BasePipeline):
                 # first convert R and T from camera i to 0's perspective
                 R, T = utils.compose_RTs(R_rel, T_rel, Rs[-1], Ts[-1])
 
-                # then convert back to i's perspective but now refe2rencing frame 0 and not frame i-1
+                # then convert back to i's perspective but now referencing frame 0 and not frame i-1
                 R = R.transpose()
                 T = np.matmul(R, -T)
 
@@ -105,6 +105,7 @@ class VideoPipelineMK3(BasePipeline):
                     R=R,
                     T=T
                 )
+                # Result is in camera 0's coordinate system
                 # ------ END STEP 2 ------------------------------------------------------------------------------------
 
                 # ------ STEP 3 ----------------------------------------------------------------------------------------
@@ -112,12 +113,11 @@ class VideoPipelineMK3(BasePipeline):
                 R_prev = Rs[-1].transpose()
                 T_prev = np.matmul(R_prev, -Ts[-1])
 
-                # recalculate points based on refined R and T
-                new_points = self._reproject_tracks_to_3d(R_prev, T_prev, R, T, track_pair)
+                R_next = R.transpose()
+                T_next = np.matmul(R_next, -T)
 
-                # finally convert from i's perspective to 0's
-                R = R.transpose()
-                T = np.matmul(R, -T)
+                # recalculate points based on refined R and T
+                new_points = self._reproject_tracks_to_3d(R_prev, T_prev, R_next, T_next, track_pair)
                 # ------ END STEP 3 ------------------------------------------------------------------------------------
             else:
                 R = R_rel
@@ -130,6 +130,7 @@ class VideoPipelineMK3(BasePipeline):
 
                 # ------ STEP 4 ----------------------------------------------------------------------------------------
                 # merge new points with existing point cloud
+                # if n_points_in_point_cloud == 0:
                 self._merge_points_into_cloud(point_cloud, new_points, new_point_indexes)
 
                 Rs += [R]
@@ -141,7 +142,7 @@ class VideoPipelineMK3(BasePipeline):
 
         # when all frames are processed, plot result
         utils.write_to_viz_file(self.camera_matrix, Rs, Ts, point_cloud)
-        # utils.call_viz()
+        utils.call_viz()
 
     def _merge_points_into_cloud(self, point_cloud, new_points, new_point_indexes):
         # check which points still have no data
