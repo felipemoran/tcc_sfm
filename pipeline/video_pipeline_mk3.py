@@ -5,6 +5,7 @@ import time
 
 from pipeline import utils
 from pipeline.base_pipeline import BasePipeline
+from pipeline.bundle_adjuster import BundleAdjuster
 
 
 class VideoPipelineMK3(BasePipeline):
@@ -50,6 +51,8 @@ class VideoPipelineMK3(BasePipeline):
 
         self.debug_colors = np.random.randint(0, 255, (self.feature_params['maxCorners'], 3))
 
+        self.bundle_adjuster = BundleAdjuster()
+
     def run(self):
         # Start by finding the images
         file, filename = self._get_video(self.dir)
@@ -85,6 +88,14 @@ class VideoPipelineMK3(BasePipeline):
 
             Rs += [R]
             Ts += [T]
+
+            assert len(Rs) == len(Ts) == len(tracks)
+
+            # perform intermediate BA step
+            point_cloud, Rs, Ts, tracks = self.bundle_adjuster.run(point_cloud, Rs, Ts, tracks)
+
+        # perform final BA step
+        point_cloud, Rs, Ts, tracks = self.bundle_adjuster.run(point_cloud, Rs, Ts, tracks)
 
         # when all frames are processed, plot result
         utils.write_to_viz_file(self.camera_matrix, Rs, Ts, point_cloud)
@@ -151,15 +162,14 @@ class VideoPipelineMK3(BasePipeline):
         replace_mask = np.intersect1d(nan_mask, new_point_indexes)
         average_mask = np.setdiff1d(new_point_indexes, replace_mask)
 
-        # TODO: there's a bug here!
-
         # for the others, do the average (results in exponential smoothing)
         # point_cloud[replace_mask] = new_points[replace_mask]
         point_cloud[replace_mask] = new_points[[item in replace_mask for item in new_point_indexes]]
-        point_cloud[average_mask] = (point_cloud[average_mask] + new_points[[item in average_mask for item in new_point_indexes]]) / 2
-
-
-    # =================== INTERNAL FUNCTIONS ===========================================================================
+        point_cloud[average_mask] = (
+                                            point_cloud[average_mask] / 2
+                                            +
+                                            new_points[[item in average_mask for item in new_point_indexes]] / 2
+                                    )
 
 
 if __name__ == '__main__':
