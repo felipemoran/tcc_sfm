@@ -33,7 +33,7 @@ class VideoPipelineMK3(BasePipeline):
         # Parameters for lucas kanade optical flow
         self.lk_params = {
             "winSize": (15, 15),
-            "maxLevel": 3,
+            "maxLevel": 2,
             "criteria": (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03),
         }
 
@@ -63,9 +63,7 @@ class VideoPipelineMK3(BasePipeline):
         point_cloud = np.full((self.feature_params['maxCorners'], 3), None, dtype=np.float_)
 
         # Loop through frames (using generators)
-        counter = 0
         for next_track_slice, next_track_slice_index_mask, is_new_feature_set in self._process_next_frame(file):
-            counter += 1
             tracks += [next_track_slice]
 
             if is_new_feature_set:
@@ -75,6 +73,11 @@ class VideoPipelineMK3(BasePipeline):
             track_pair = np.array(tracks[-2:])
 
             R, T, new_points, new_point_indexes = self._calculate_pose(track_pair, Rs[-1], Ts[-1], point_cloud)
+
+            if R is None:
+                # Last track slice wasn't good (not enough points) so let's drop it
+                tracks = tracks[:-1]
+                continue
 
             # if cloud is empty and there are not enough new points, try next frame
             n_points_in_point_cloud = (~np.isnan(point_cloud)).any(axis=1).sum()
@@ -114,7 +117,7 @@ class VideoPipelineMK3(BasePipeline):
             "Point cloud should have zero points or more than the minimum and not something in between"
 
         # if not enough points are in the cloud and track slice at the same time skip refine step
-        if n_points_in_point_cloud > self.min_num_points_in_point_cloud:
+        if n_points_in_point_cloud > self.min_num_points_in_point_cloud and R_rel is not None:
 
             # ------ STEP 2 ----------------------------------------------------------------------------------------
             # first convert R and T from camera i to 0's perspective
@@ -140,13 +143,12 @@ class VideoPipelineMK3(BasePipeline):
 
             # ------ STEP 3 ----------------------------------------------------------------------------------------
             # recalculate points based on refined R and T
-            new_points = self._reproject_tracks_to_3d(
+            new_points, new_point_indexes = self._reproject_tracks_to_3d(
                 prev_R.transpose(),
                 np.matmul(prev_R.transpose(), -prev_T),
                 R.transpose(),
                 np.matmul(R.transpose(), -T),
                 track_pair)
-            new_point_indexes = np.arange(len(new_points))
             # ------ END STEP 3 ------------------------------------------------------------------------------------
         else:
             R = R_rel

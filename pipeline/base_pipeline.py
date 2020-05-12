@@ -179,7 +179,7 @@ class BasePipeline:
         return R, T
 
     def _get_pose_from_two_tracks(self, tracks):
-        # Remove all points that don'T have correspondence between frames
+        # Remove all points that don't have correspondence between frames
         num_points = tracks.shape[1]
         track_mask = [bool((tracks[:, point_id] > 0).all()) for point_id in range(num_points)]
         tracks = tracks[:, track_mask]
@@ -187,7 +187,7 @@ class BasePipeline:
         if tracks.shape[1] <= 5:
             print("Not enough points to run 5-point algorithm. Aborting")
             # Abort!
-            return [None] * 4
+            return None, None, [], []
 
         # We have no 3D point info so we calculate based on the two cameras
         E, five_pt_mask = cv2.findEssentialMat(
@@ -235,11 +235,16 @@ class BasePipeline:
     def _reproject_tracks_to_3d(self, R_1, T_1, R_2, T_2, tracks):
         assert tracks.shape[0] == 2, "Can't do reprojection with {} cameras, 2 are needed".format(tracks.shape[0])
 
+        # Remove all points that don't have correspondence between frames
+        num_points = tracks.shape[1]
+        track_mask = [bool((tracks[:, point_id] > 0).all()) for point_id in range(num_points)]
+        points_index_mask = np.arange(num_points)[track_mask]
+        tracks = tracks[:, track_mask]
+
         P1 = np.matmul(self.camera_matrix, np.hstack((R_1, T_1)))
         P2 = np.matmul(self.camera_matrix, np.hstack((R_2, T_2)))
 
         points_4d = cv2.triangulatePoints(P1, P2, tracks[0].transpose(), tracks[1].transpose())
-
         points_3d = cv2.convertPointsFromHomogeneous(points_4d.transpose()).squeeze()
 
-        return points_3d
+        return points_3d, points_index_mask
