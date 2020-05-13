@@ -44,6 +44,7 @@ class BundleAdjuster:
 
         # STEP 1: Convert from pipeline style to BA style ======================
         for R, T in zip(Rs, Ts):
+            R, T = R.transpose(), np.matmul(R.transpose(), -T)
             camera_params += [np.vstack((cv2.Rodrigues(R)[0], T)).reshape(-1)]
         camera_params = np.array(camera_params, dtype=int)
         assert camera_params.shape == (len(Rs), 6)
