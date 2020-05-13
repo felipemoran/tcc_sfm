@@ -186,18 +186,16 @@ class BasePipeline:
 
         if tracks.shape[1] <= 5:
             print("Not enough points to run 5-point algorithm. Aborting")
-            # Abort!
             return None, None, [], []
 
         # We have no 3D point info so we calculate based on the two cameras
         E, five_pt_mask = cv2.findEssentialMat(
-            tracks[0],
-            tracks[1],
-            self.camera_matrix,
-            cv2.RANSAC,
+            ponts1=tracks[0],
+            points2=tracks[1],
+            cameraMatrix=self.camera_matrix,
+            method=cv2.RANSAC,
             threshold=self.find_essential_mat_threshold,
             prob=self.find_essential_mat_prob)
-        # E, five_pt_mask = cv2.findEssentialMat(tracks[0], tracks[1], self.camera_matrix, cv2.RANSAC)
 
         print('P: {}'.format(utils.progress_bar(sum(five_pt_mask.squeeze()), five_pt_mask.shape[0])), end='   ')
         result = cv2.recoverPose(
@@ -209,21 +207,17 @@ class BasePipeline:
             mask=five_pt_mask.copy()
             # mask=None
         )
-        retval, R, T, pose_mask, points_4d = result
+        _, R, T, pose_mask, points_4d = result
 
         print('P: {}'.format(utils.progress_bar(sum(pose_mask.squeeze()), pose_mask.shape[0])))
 
         # Convert it back to first camera base system
-        R = R.transpose()
-        T = np.matmul(R, -T)
+        R, T = R.transpose(), np.matmul(R.transpose, -T)
 
         # filter out 3d_points and point_indexes according to mask
         final_mask = pose_mask.squeeze().astype(np.bool)
         points_3d = cv2.convertPointsFromHomogeneous(points_4d.transpose()).squeeze()
         points_3d = points_3d[final_mask]
-
-        # convert points to camera 1 coord frame
-        # points_3d = (T + np.matmul(R, points_3d.transpose())).transpose()
 
         # create point index mask
         point_indexes = np.arange(num_points)[track_mask][final_mask]
@@ -244,7 +238,12 @@ class BasePipeline:
         P1 = np.matmul(self.camera_matrix, np.hstack((R_1, T_1)))
         P2 = np.matmul(self.camera_matrix, np.hstack((R_2, T_2)))
 
-        points_4d = cv2.triangulatePoints(P1, P2, tracks[0].transpose(), tracks[1].transpose())
+        points_4d = cv2.triangulatePoints(
+            projMatr1=P1,
+            projMatr2=P2,
+            projPoints1=tracks[0].transpose(),
+            projPoints2=tracks[1].transpose()
+        )
         points_3d = cv2.convertPointsFromHomogeneous(points_4d.transpose()).squeeze()
 
         return points_3d, points_index_mask

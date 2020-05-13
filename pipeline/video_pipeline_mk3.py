@@ -124,8 +124,7 @@ class VideoPipelineMK3(BasePipeline):
             R, T = utils.compose_RTs(R_rel, T_rel, prev_R, prev_T)
 
             # then convert back to i's perspective but now referencing frame 0 and not frame i-1
-            R = R.transpose()
-            T = np.matmul(R, -T)
+            R, T = R.transpose(), np.matmul(R.transpose, -T)
 
             # create new index mask based on existing point cloud's and newly created track's
             point_cloud_index_mask = np.arange(len(point_cloud))[point_cloud_mask]
@@ -144,15 +143,14 @@ class VideoPipelineMK3(BasePipeline):
             # ------ STEP 3 ----------------------------------------------------------------------------------------
             # recalculate points based on refined R and T
             new_points, new_point_indexes = self._reproject_tracks_to_3d(
-                prev_R.transpose(),
-                np.matmul(prev_R.transpose(), -prev_T),
-                R.transpose(),
-                np.matmul(R.transpose(), -T),
-                track_pair)
+                R_1=prev_R.transpose(),
+                T_1=np.matmul(prev_R.transpose(), -prev_T),
+                R_2=R.transpose(),
+                T_2=np.matmul(R.transpose(), -T),
+                tracks=track_pair)
             # ------ END STEP 3 ------------------------------------------------------------------------------------
         else:
-            R = R_rel
-            T = T_rel
+            R, T = R_rel, T_rel
 
         return R, T, new_points, new_point_indexes
 
