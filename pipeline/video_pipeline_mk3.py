@@ -57,7 +57,7 @@ class VideoPipelineMK3(BasePipeline):
             0, 255, (self.feature_params["maxCorners"], 3)
         )
 
-        self.bundle_adjuster = BundleAdjuster(self.camera_matrix)
+        self.bundle_adjuster = BundleAdjuster(self.camera_matrix, verbose=2)
 
     def run(self):
         # Start by finding the images
@@ -66,6 +66,7 @@ class VideoPipelineMK3(BasePipeline):
         Rs = [np.eye(3)]
         Ts = [np.zeros((3, 1))]
         tracks = []
+        track_index_masks = []
         point_cloud = np.full(
             (self.feature_params["maxCorners"], 3), None, dtype=np.float_
         )
@@ -79,6 +80,7 @@ class VideoPipelineMK3(BasePipeline):
             tracks += [next_track_slice]
 
             if is_new_feature_set:
+                track_index_masks += [next_track_slice_index_mask]
                 assert len(tracks) == 1, "Resetting KLT features is not yet implemented"
                 continue
 
@@ -108,10 +110,9 @@ class VideoPipelineMK3(BasePipeline):
 
             Rs += [R]
             Ts += [T]
+            track_index_masks += [new_point_indexes]
 
             assert len(Rs) == len(Ts) == len(tracks)
-
-            track_index_masks = None
 
             # perform intermediate BA step
             point_cloud, Rs, Ts = self.bundle_adjuster.run(

@@ -12,6 +12,8 @@ Version: 1.0.0
 import numpy as np
 from scipy.optimize import least_squares
 from scipy.sparse import lil_matrix
+import cv2
+from pipeline import utils
 
 
 class BundleAdjuster:
@@ -33,6 +35,49 @@ class BundleAdjuster:
         self.optimized_cameras = None
 
     def run(self, point_cloud, Rs, Ts, tracks, track_index_masks):
+        assert len(Rs) == len(Ts) == len(tracks) == len(track_index_masks)
+
+        camera_params = []
+        points_2d = np.empty((0, 2), dtype=np.float_)
+        camera_indexes = np.empty((0,), dtype=int)
+        point_indexes = np.empty((0,), dtype=int)
+
+        # STEP 1: Convert from pipeline style to BA style ======================
+        for R, T in zip(Rs, Ts):
+            camera_params += [np.vstack((cv2.Rodrigues(R)[0], T)).reshape(-1)]
+        camera_params = np.array(camera_params, dtype=int)
+        assert camera_params.shape == (len(Rs), 6)
+
+        for index, (track, index_mask) in enumerate(zip(tracks, track_index_masks)):
+            camera_indexes = np.append(camera_indexes, [[index] * index_mask.shape[0]])
+            point_indexes = np.append(point_indexes, index_mask)
+            points_2d = np.vstack((points_2d, track[index_mask]))
+        assert len(camera_indexes) == len(point_indexes) == len(points_2d)
+
+        not_nan_mask = ~utils.get_nan_mask(point_cloud)
+        # END OF STEP 1 ========================================================
+
+        # STEP 2: Optimize =====================================================
+        optimized_cameras, optimized_points = self.optimize(
+            camera_params=camera_params,
+            points_3d=point_cloud[not_nan_mask],
+            points_2d=points_2d,
+            camera_indices=camera_indexes,
+            point_indices=point_indexes,
+        )
+        # END OF STEP 2 ========================================================
+
+        # STEP 1: Convert back to pipeline style from BA style =================
+        Rs = []
+        Ts = []
+        point_cloud[not_nan_mask] = optimized_points
+
+        for camera in optimized_cameras:
+            Rs += [cv2.Rodrigues(camera[:3])[0]]
+            Ts += [camera[3:].reshape((3, -1))]
+
+        # END OF STEP 3 ========================================================
+
         return point_cloud, Rs, Ts
 
     def _rotate(self, points, rot_vecs):
@@ -122,7 +167,7 @@ class BundleAdjuster:
         return camera_params, points_3d
 
     def optimize(
-        self, camera_params, points_3d, points_2d, camera_indices, points_indices
+        self, camera_params, points_3d, points_2d, camera_indices, point_indices
     ):
         """Apply bundle adjustment optimization
 
@@ -146,14 +191,14 @@ class BundleAdjuster:
             element of this array corresponds to the camera that generated
             the i-th 2D point.
 
-        points_indices: array, shape (n_observations,)
+        point_indices: array, shape (n_observations,)
             Contains 3D points indices for each observed projection. The i-th
             element of this array corresponds to the 3D point that generated
             the i-th 2D point.
 
         Returns
         -------
-        optimized_cameras: array, shape (n_cameras, 9)
+        optimized_cameras: array, shape (n_cameras, 6)
             Contains optimized camera parameters. Same order as input.
 
         optimized_points: array, shape (n_points, 3)
