@@ -57,7 +57,7 @@ class VideoPipelineMK3(BasePipeline):
             0, 255, (self.feature_params["maxCorners"], 3)
         )
 
-        self.bundle_adjuster = BundleAdjuster()
+        self.bundle_adjuster = BundleAdjuster(self.camera_matrix)
 
     def run(self):
         # Start by finding the images
@@ -94,7 +94,7 @@ class VideoPipelineMK3(BasePipeline):
                 continue
 
             # if cloud is empty and there are not enough new points, try next frame
-            n_points_in_point_cloud = (~np.isnan(point_cloud)).any(axis=1).sum()
+            n_points_in_point_cloud = (~utils.get_nan_mask(point_cloud)).sum()
             if (
                 n_points_in_point_cloud == 0
                 and len(new_points) < self.min_num_points_in_point_cloud
@@ -111,14 +111,16 @@ class VideoPipelineMK3(BasePipeline):
 
             assert len(Rs) == len(Ts) == len(tracks)
 
+            track_index_masks = None
+
             # perform intermediate BA step
-            point_cloud, Rs, Ts, tracks = self.bundle_adjuster.run(
-                point_cloud, Rs, Ts, tracks
+            point_cloud, Rs, Ts = self.bundle_adjuster.run(
+                point_cloud, Rs, Ts, tracks, track_index_masks
             )
 
         # perform final BA step
-        point_cloud, Rs, Ts, tracks = self.bundle_adjuster.run(
-            point_cloud, Rs, Ts, tracks
+        point_cloud, Rs, Ts = self.bundle_adjuster.run(
+            point_cloud, Rs, Ts, tracks, track_index_masks
         )
 
         # when all frames are processed, plot result
@@ -126,7 +128,7 @@ class VideoPipelineMK3(BasePipeline):
         utils.call_viz()
 
     def _calculate_pose(self, track_pair, prev_R, prev_T, point_cloud):
-        point_cloud_mask = (~np.isnan(point_cloud)).any(axis=1)
+        point_cloud_mask = ~utils.get_nan_mask(point_cloud)
         n_points_in_point_cloud = point_cloud_mask.sum()
 
         # ------ STEP 1 ----------------------------------------------------------------------------------------
@@ -156,9 +158,7 @@ class VideoPipelineMK3(BasePipeline):
 
             # create new index mask based on existing point cloud's and newly created track's
             point_cloud_index_mask = np.arange(len(point_cloud))[point_cloud_mask]
-            not_nan_mask = (~np.isnan(track_pair[1][point_cloud_index_mask])).any(
-                axis=1
-            )
+            not_nan_mask = ~utils.get_nan_mask(track_pair[1][point_cloud_index_mask])
 
             # refine R and T based on previous point cloud
             R, T = self._get_pose_from_points_and_projection(

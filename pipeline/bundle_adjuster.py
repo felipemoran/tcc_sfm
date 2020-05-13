@@ -32,6 +32,9 @@ class BundleAdjuster:
         self.optimized_points = None
         self.optimized_cameras = None
 
+    def run(self, point_cloud, Rs, Ts, tracks, track_index_masks):
+        return point_cloud, Rs, Ts
+
     def _rotate(self, points, rot_vecs):
         """Rotate 3D points by given rotation vectors.
 

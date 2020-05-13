@@ -209,7 +209,7 @@ class BasePipeline:
 
         # We have no 3D point info so we calculate based on the two cameras
         E, five_pt_mask = cv2.findEssentialMat(
-            ponts1=tracks[0],
+            points1=tracks[0],
             points2=tracks[1],
             cameraMatrix=self.camera_matrix,
             method=cv2.RANSAC,

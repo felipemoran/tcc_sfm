@@ -58,3 +58,7 @@ def compose_RTs(rel_R, rel_T, comp_R, comp_T):
 
 def translate_points_to_base_frame(comp_R, comp_T, points):
     return (comp_T + np.matmul(comp_R, points.transpose())).transpose()
+
+
+def get_nan_mask(input_array):
+    return (np.isnan(input_array)).any(axis=1)

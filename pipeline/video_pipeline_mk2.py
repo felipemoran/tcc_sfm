@@ -106,7 +106,7 @@ class VideoPipelineMK2(BasePipeline):
             else:
                 # check if a mask is needed for track slice or points_3d
                 track_slice = next_track_slice[point_indexes]
-                not_nan_mask = (~np.isnan(track_slice)).any(axis=1)
+                not_nan_mask = ~utils.get_nan_mask(track_slice)
                 R, T = self._get_pose_from_points_and_projection(
                     track_slice[not_nan_mask], points_3d[not_nan_mask]
                 )
