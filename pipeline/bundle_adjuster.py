@@ -13,13 +13,14 @@ import numpy as np
 from scipy.optimize import least_squares
 from scipy.sparse import lil_matrix
 
+
 class BundleAdjuster:
     """Bundle adjusment base class.
 
     Performs end-to-end bundle adjusment to Structure from Motion problems.
     """
 
-    def __init__(self, camera_matrix, tol=1e-4, method='trf', verbose=0):
+    def __init__(self, camera_matrix, tol=1e-4, method="trf", verbose=0):
 
         # Basic optimization attributes
         self.tol = tol
@@ -39,13 +40,17 @@ class BundleAdjuster:
         for details
         """
         theta = np.linalg.norm(rot_vecs, axis=1)[:, np.newaxis]
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid="ignore"):
             v = rot_vecs / theta
             v = np.nan_to_num(v)
         dot = np.sum(points * v, axis=1)[:, np.newaxis]
         cos_theta = np.cos(theta)
         sin_theta = np.sin(theta)
-        rot = cos_theta * points + sin_theta * np.cross(v, points) + dot * (1 - cos_theta) * v
+        rot = (
+            cos_theta * points
+            + sin_theta * np.cross(v, points)
+            + dot * (1 - cos_theta) * v
+        )
         return rot
 
     def _project(self, points, camera_params):
@@ -62,31 +67,34 @@ class BundleAdjuster:
         points_proj = points_proj[:, :2] / points_proj[:, 2, np.newaxis]
 
         # Set camera calibration params
-        fx = self.camera_matrix[0,0]
-        cx = self.camera_matrix[0,2]
-        fy = self.camera_matrix[1,1]
-        cy = self.camera_matrix[1,2]
+        fx = self.camera_matrix[0, 0]
+        cx = self.camera_matrix[0, 2]
+        fy = self.camera_matrix[1, 1]
+        cy = self.camera_matrix[1, 2]
 
         # Apply projection formula WITHOUT radial distortion
-        points_proj[:,0] = points_proj[:,0]*fx + cx
-        points_proj[:,1] = points_proj[:,1]*fy + cy
+        points_proj[:, 0] = points_proj[:, 0] * fx + cx
+        points_proj[:, 1] = points_proj[:, 1] * fy + cy
 
         return points_proj
 
-    def _objective_function(self, params, n_cameras, n_points, camera_indices,
-                            point_indices, points_2d):
+    def _objective_function(
+        self, params, n_cameras, n_points, camera_indices, point_indices, points_2d
+    ):
         """Compute residuals.
 
         `params` contains camera parameters and 3-D coordinates.
         """
-        camera_params = params[:n_cameras * 6].reshape((n_cameras, 6))
-        points_3d = params[n_cameras * 6:].reshape((n_points, 3))
-        points_proj = self._project(points_3d[point_indices],
-                                    camera_params[camera_indices])
+        camera_params = params[: n_cameras * 6].reshape((n_cameras, 6))
+        points_3d = params[n_cameras * 6 :].reshape((n_points, 3))
+        points_proj = self._project(
+            points_3d[point_indices], camera_params[camera_indices]
+        )
         return (points_proj - points_2d).ravel()
 
-    def _bundle_adjustment_sparsity(self, n_cameras, n_points, camera_indices,
-                                    point_indices):
+    def _bundle_adjustment_sparsity(
+        self, n_cameras, n_points, camera_indices, point_indices
+    ):
         """Build optimization sparse matrix."""
 
         m = camera_indices.size * 2
@@ -106,12 +114,13 @@ class BundleAdjuster:
 
     def _get_optimized_params(self, params, n_cameras, n_points):
         """ Parse optimization results to camera params and 3D points"""
-        camera_params = params[:n_cameras * 6].reshape((n_cameras, 6))
-        points_3d = params[n_cameras * 6:].reshape((n_points, 3))
+        camera_params = params[: n_cameras * 6].reshape((n_cameras, 6))
+        points_3d = params[n_cameras * 6 :].reshape((n_points, 3))
         return camera_params, points_3d
 
-    def optimize(self,camera_params, points_3d, points_2d, camera_indices,
-                points_indices):
+    def optimize(
+        self, camera_params, points_3d, points_2d, camera_indices, points_indices
+    ):
         """Apply bundle adjustment optimization
 
         Parameters
@@ -156,18 +165,23 @@ class BundleAdjuster:
         x0 = np.hstack((camera_params.ravel(), points_3d.ravel()))
 
         # Build sparse matrix and run optimization
-        A = self._bundle_adjustment_sparsity(n_cameras, n_points,
-                                            camera_indices, point_indices)
-        optim_res = least_squares(self._objective_function, x0,
-                                  jac_sparsity=A,
-                                  verbose=self.verbose,
-                                  x_scale='jac',
-                                  ftol=self.tol,
-                                  method=self.method,
-                                  args=(n_cameras, n_points, camera_indices,
-                                        point_indices, points_2d))
+        A = self._bundle_adjustment_sparsity(
+            n_cameras, n_points, camera_indices, point_indices
+        )
+        optim_res = least_squares(
+            self._objective_function,
+            x0,
+            jac_sparsity=A,
+            verbose=self.verbose,
+            x_scale="jac",
+            ftol=self.tol,
+            method=self.method,
+            args=(n_cameras, n_points, camera_indices, point_indices, points_2d),
+        )
 
         # Return optimized params
-        self.optimized_cameras, self.optimized_points = self._get_optimized_params(optim_res.x, n_cameras, n_points)
+        self.optimized_cameras, self.optimized_points = self._get_optimized_params(
+            optim_res.x, n_cameras, n_points
+        )
 
         return self.optimized_cameras, self.optimized_points

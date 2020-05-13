@@ -37,7 +37,7 @@ class VideoPipelineMK2(BasePipeline):
             "maxCorners": 200,
             "qualityLevel": 0.5,
             "minDistance": 30,
-            "blockSize": 10
+            "blockSize": 10,
         }
 
         # Parameters for lucas kanade optical flow
@@ -49,15 +49,21 @@ class VideoPipelineMK2(BasePipeline):
 
         self.image_size = None
 
-        self.camera_matrix = np.array([[765.16859169, 0., 379.11876567],
-                                       [0., 762.38664643, 497.22086655],
-                                       [0., 0., 1.]])
+        self.camera_matrix = np.array(
+            [
+                [765.16859169, 0.0, 379.11876567],
+                [0.0, 762.38664643, 497.22086655],
+                [0.0, 0.0, 1.0],
+            ]
+        )
 
         self.recover_pose_reconstruction_distance_threshold = 50
         self.find_essential_mat_threshold = 3
         self.find_essential_mat_prob = 0.98
 
-        self.debug_colors = np.random.randint(0, 255, (self.feature_params['maxCorners'], 3))
+        self.debug_colors = np.random.randint(
+            0, 255, (self.feature_params["maxCorners"], 3)
+        )
 
     def run(self):
         # Start by finding the images
@@ -75,11 +81,17 @@ class VideoPipelineMK2(BasePipeline):
         stored_points = np.zeros((0, 3))
 
         # Loop through frames (using generators)
-        for next_track_slice, next_track_slice_index_mask, is_new_feature_set in self._process_next_frame(file):
+        for (
+            next_track_slice,
+            next_track_slice_index_mask,
+            is_new_feature_set,
+        ) in self._process_next_frame(file):
             if is_new_feature_set:
                 prev_track_slice = next_track_slice
 
-                assert points_3d is None, 'Resetting KLT features is not yet implemented'
+                assert (
+                    points_3d is None
+                ), "Resetting KLT features is not yet implemented"
                 continue
 
             if points_3d is None:
@@ -95,7 +107,9 @@ class VideoPipelineMK2(BasePipeline):
                 # check if a mask is needed for track slice or points_3d
                 track_slice = next_track_slice[point_indexes]
                 not_nan_mask = (~np.isnan(track_slice)).any(axis=1)
-                R, T = self._get_pose_from_points_and_projection(track_slice[not_nan_mask], points_3d[not_nan_mask])
+                R, T = self._get_pose_from_points_and_projection(
+                    track_slice[not_nan_mask], points_3d[not_nan_mask]
+                )
 
             Rs += [R]
             Ts += [T]
@@ -110,12 +124,16 @@ class VideoPipelineMK2(BasePipeline):
     # =================== INTERNAL FUNCTIONS ===========================================================================
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('dir',
-                        help='Directory with image files for reconstructions')
-    parser.add_argument('-sd', '--save_debug_visualization',
-                        help='Save debug visualizations to files?', action='store_true', default=False)
+    parser.add_argument("dir", help="Directory with image files for reconstructions")
+    parser.add_argument(
+        "-sd",
+        "--save_debug_visualization",
+        help="Save debug visualizations to files?",
+        action="store_true",
+        default=False,
+    )
     args = parser.parse_args()
 
     sfm = VideoPipelineMK2(**vars(args))

@@ -29,11 +29,9 @@ class SyntheticPipelineMK2(SyntheticPipelineMK1, VideoPipelineMK2):
     def __init__(self):
         SyntheticPipelineMK1.__init__(self)
         # camera arbitraria
-        self.camera_matrix = np.array([
-            [500, 0.0, 500],
-            [0.0, 500, 500],
-            [0.0, 0.0, 1.0],
-        ], dtype=np.float_)
+        self.camera_matrix = np.array(
+            [[500, 0.0, 500], [0.0, 500, 500], [0.0, 0.0, 1.0],], dtype=np.float_
+        )
         self.dir = None
 
     def _process_next_frame(self, file):
@@ -41,19 +39,16 @@ class SyntheticPipelineMK2(SyntheticPipelineMK1, VideoPipelineMK2):
 
     def _get_synthetic_camera_translations(self):
         # vetores de translação das câmeras na base global
-        Ts = np.array([
-            [10, 0, 0],
-            [20, 5, 0],
-            [10, 12.5, 0],
-            [5, 5, 0],
-            [10, 5, 5],
-        ], dtype=np.float_)
+        Ts = np.array(
+            [[10, 0, 0], [20, 5, 0], [10, 12.5, 0], [5, 5, 0], [10, 5, 5],],
+            dtype=np.float_,
+        )
         return Ts
 
     def run(self):
         return VideoPipelineMK2.run(self)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sp = SyntheticPipelineMK2()
     sp.run()

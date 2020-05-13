@@ -27,7 +27,7 @@ class VideoPipelineMK3(BasePipeline):
             "maxCorners": 200,
             "qualityLevel": 0.5,
             "minDistance": 15,
-            "blockSize": 10
+            "blockSize": 10,
         }
 
         # Parameters for lucas kanade optical flow
@@ -39,9 +39,13 @@ class VideoPipelineMK3(BasePipeline):
 
         self.image_size = None
 
-        self.camera_matrix = np.array([[765.16859169, 0., 379.11876567],
-                                       [0., 762.38664643, 497.22086655],
-                                       [0., 0., 1.]])
+        self.camera_matrix = np.array(
+            [
+                [765.16859169, 0.0, 379.11876567],
+                [0.0, 762.38664643, 497.22086655],
+                [0.0, 0.0, 1.0],
+            ]
+        )
 
         self.recover_pose_reconstruction_distance_threshold = 50
         self.find_essential_mat_threshold = 3
@@ -49,7 +53,9 @@ class VideoPipelineMK3(BasePipeline):
 
         self.min_num_points_in_point_cloud = 10
 
-        self.debug_colors = np.random.randint(0, 255, (self.feature_params['maxCorners'], 3))
+        self.debug_colors = np.random.randint(
+            0, 255, (self.feature_params["maxCorners"], 3)
+        )
 
         self.bundle_adjuster = BundleAdjuster()
 
@@ -60,19 +66,27 @@ class VideoPipelineMK3(BasePipeline):
         Rs = [np.eye(3)]
         Ts = [np.zeros((3, 1))]
         tracks = []
-        point_cloud = np.full((self.feature_params['maxCorners'], 3), None, dtype=np.float_)
+        point_cloud = np.full(
+            (self.feature_params["maxCorners"], 3), None, dtype=np.float_
+        )
 
         # Loop through frames (using generators)
-        for next_track_slice, next_track_slice_index_mask, is_new_feature_set in self._process_next_frame(file):
+        for (
+            next_track_slice,
+            next_track_slice_index_mask,
+            is_new_feature_set,
+        ) in self._process_next_frame(file):
             tracks += [next_track_slice]
 
             if is_new_feature_set:
-                assert len(tracks) == 1, 'Resetting KLT features is not yet implemented'
+                assert len(tracks) == 1, "Resetting KLT features is not yet implemented"
                 continue
 
             track_pair = np.array(tracks[-2:])
 
-            R, T, new_points, new_point_indexes = self._calculate_pose(track_pair, Rs[-1], Ts[-1], point_cloud)
+            R, T, new_points, new_point_indexes = self._calculate_pose(
+                track_pair, Rs[-1], Ts[-1], point_cloud
+            )
 
             if R is None:
                 # Last track slice wasn't good (not enough points) so let's drop it
@@ -81,7 +95,10 @@ class VideoPipelineMK3(BasePipeline):
 
             # if cloud is empty and there are not enough new points, try next frame
             n_points_in_point_cloud = (~np.isnan(point_cloud)).any(axis=1).sum()
-            if n_points_in_point_cloud == 0 and len(new_points) < self.min_num_points_in_point_cloud:
+            if (
+                n_points_in_point_cloud == 0
+                and len(new_points) < self.min_num_points_in_point_cloud
+            ):
                 # don't forget to reset track vector and drop old unused data
                 tracks = [tracks[-1]]
                 continue
@@ -95,10 +112,14 @@ class VideoPipelineMK3(BasePipeline):
             assert len(Rs) == len(Ts) == len(tracks)
 
             # perform intermediate BA step
-            point_cloud, Rs, Ts, tracks = self.bundle_adjuster.run(point_cloud, Rs, Ts, tracks)
+            point_cloud, Rs, Ts, tracks = self.bundle_adjuster.run(
+                point_cloud, Rs, Ts, tracks
+            )
 
         # perform final BA step
-        point_cloud, Rs, Ts, tracks = self.bundle_adjuster.run(point_cloud, Rs, Ts, tracks)
+        point_cloud, Rs, Ts, tracks = self.bundle_adjuster.run(
+            point_cloud, Rs, Ts, tracks
+        )
 
         # when all frames are processed, plot result
         utils.write_to_viz_file(self.camera_matrix, Rs, Ts, point_cloud)
@@ -110,32 +131,41 @@ class VideoPipelineMK3(BasePipeline):
 
         # ------ STEP 1 ----------------------------------------------------------------------------------------
         # calculate R, T_un, points with 2 tracks (5 point + recover pose)
-        R_rel, T_rel, new_points, new_point_indexes = self._get_pose_from_two_tracks(track_pair)
+        R_rel, T_rel, new_points, new_point_indexes = self._get_pose_from_two_tracks(
+            track_pair
+        )
         # ------ END STEP 1 ------------------------------------------------------------------------------------
 
-        assert n_points_in_point_cloud == 0 or n_points_in_point_cloud > self.min_num_points_in_point_cloud, \
-            "Point cloud should have zero points or more than the minimum and not something in between"
+        assert (
+            n_points_in_point_cloud == 0
+            or n_points_in_point_cloud > self.min_num_points_in_point_cloud
+        ), "Point cloud should have zero points or more than the minimum and not something in between"
 
         # if not enough points are in the cloud and track slice at the same time skip refine step
-        if n_points_in_point_cloud > self.min_num_points_in_point_cloud and R_rel is not None:
+        if (
+            n_points_in_point_cloud > self.min_num_points_in_point_cloud
+            and R_rel is not None
+        ):
 
             # ------ STEP 2 ----------------------------------------------------------------------------------------
             # first convert R and T from camera i to 0's perspective
             R, T = utils.compose_RTs(R_rel, T_rel, prev_R, prev_T)
 
             # then convert back to i's perspective but now referencing frame 0 and not frame i-1
-            R, T = R.transpose(), np.matmul(R.transpose, -T)
+            R, T = R.transpose(), np.matmul(R.transpose(), -T)
 
             # create new index mask based on existing point cloud's and newly created track's
             point_cloud_index_mask = np.arange(len(point_cloud))[point_cloud_mask]
-            not_nan_mask = (~np.isnan(track_pair[1][point_cloud_index_mask])).any(axis=1)
+            not_nan_mask = (~np.isnan(track_pair[1][point_cloud_index_mask])).any(
+                axis=1
+            )
 
             # refine R and T based on previous point cloud
             R, T = self._get_pose_from_points_and_projection(
                 track_slice=track_pair[1][point_cloud_index_mask][not_nan_mask],
                 points_3d=point_cloud[point_cloud_index_mask][not_nan_mask],
                 R=R,
-                T=T
+                T=T,
             )
             # Result is in camera 0's coordinate system
             # ------ END STEP 2 ------------------------------------------------------------------------------------
@@ -147,7 +177,8 @@ class VideoPipelineMK3(BasePipeline):
                 T_1=np.matmul(prev_R.transpose(), -prev_T),
                 R_2=R.transpose(),
                 T_2=np.matmul(R.transpose(), -T),
-                tracks=track_pair)
+                tracks=track_pair,
+            )
             # ------ END STEP 3 ------------------------------------------------------------------------------------
         else:
             R, T = R_rel, T_rel
@@ -156,7 +187,9 @@ class VideoPipelineMK3(BasePipeline):
 
     def _merge_points_into_cloud(self, point_cloud, new_points, new_point_indexes):
         # check which points still have no data
-        nan_mask = np.array(range(point_cloud.shape[0]))[np.isnan(point_cloud).any(axis=1)]
+        nan_mask = np.array(range(point_cloud.shape[0]))[
+            np.isnan(point_cloud).any(axis=1)
+        ]
 
         # for those, replace nan by a value
         replace_mask = np.intersect1d(nan_mask, new_point_indexes)
@@ -164,20 +197,25 @@ class VideoPipelineMK3(BasePipeline):
 
         # for the others, do the average (results in exponential smoothing)
         # point_cloud[replace_mask] = new_points[replace_mask]
-        point_cloud[replace_mask] = new_points[[item in replace_mask for item in new_point_indexes]]
+        point_cloud[replace_mask] = new_points[
+            [item in replace_mask for item in new_point_indexes]
+        ]
         point_cloud[average_mask] = (
-                                            point_cloud[average_mask] / 2
-                                            +
-                                            new_points[[item in average_mask for item in new_point_indexes]] / 2
-                                    )
+            point_cloud[average_mask] / 2
+            + new_points[[item in average_mask for item in new_point_indexes]] / 2
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('dir',
-                        help='Directory with image files for reconstructions')
-    parser.add_argument('-sd', '--save_debug_visualization',
-                        help='Save debug visualizations to files?', action='store_true', default=False)
+    parser.add_argument("dir", help="Directory with image files for reconstructions")
+    parser.add_argument(
+        "-sd",
+        "--save_debug_visualization",
+        help="Save debug visualizations to files?",
+        action="store_true",
+        default=False,
+    )
     args = parser.parse_args()
 
     start = time.time()
