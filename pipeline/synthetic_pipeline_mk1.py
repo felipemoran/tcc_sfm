@@ -63,9 +63,12 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
             track_slice = cv2.projectPoints(
                 points_3d, R_cam_vec, t_cam, self.camera_matrix, None
             )[0].squeeze()
-            track_index_mask = np.arange(len(track_slice))
 
-            yield track_slice, track_index_mask, is_new_feature_set
+            # track_index_mask = np.arange(len(track_slice))
+            slice_mask = (track_slice > 0).all(axis=1)
+            track_slice[~slice_mask] = np.array([None, None])
+
+            yield track_slice, slice_mask, is_new_feature_set
 
             is_new_feature_set = False
             frame_counter += 1

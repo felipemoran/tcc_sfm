@@ -95,8 +95,9 @@ class BasePipeline:
                 status=status
                 # mimics the same format as status from cv2.calcOpticalFlowPyrLK()
             )
+            slice_mask = utils.create_bool_mask(len(track_slice), track_indexes)
 
-            yield track_slice, track_indexes, is_new_feature_set
+            yield track_slice, slice_mask, is_new_feature_set
 
             prev_frame = next_frame.copy()  # do I really need this .copy() ?
             prev_features = next_features
@@ -200,23 +201,24 @@ class BasePipeline:
     def _get_pose_from_two_tracks(self, tracks):
         # Remove all points that don't have correspondence between frames
         num_points = tracks.shape[1]
-        track_mask = [
-            bool((tracks[:, point_id] > 0).all()) for point_id in range(num_points)
-        ]
-        tracks = tracks[:, track_mask]
+        track_mask = ~np.isnan(tracks).any(axis=(0, 2))
 
-        if tracks.shape[1] <= 5:
+        if track_mask.sum() <= 5:
             print("Not enough points to run 5-point algorithm. Aborting")
             return None, None, [], []
 
+        # Since findEssentialMat can't receive masks, we gotta "wrap" the inputs with one
+        trimmed_tracks = tracks[:, track_mask]
+
         # We have no 3D point info so we calculate based on the two cameras
         E, five_pt_mask = cv2.findEssentialMat(
-            points1=tracks[0],
-            points2=tracks[1],
+            points1=trimmed_tracks[0],
+            points2=trimmed_tracks[1],
             cameraMatrix=self.camera_matrix,
             method=cv2.RANSAC,
-            threshold=self.find_essential_mat_threshold,
             prob=self.find_essential_mat_prob,
+            threshold=self.find_essential_mat_threshold,
+            # mask=track_mask,
         )
 
         print(
@@ -225,16 +227,14 @@ class BasePipeline:
             ),
             end="   ",
         )
-        result = cv2.recoverPose(
+        _, R, T, pose_mask, points_4d = cv2.recoverPose(
             E=E,
-            points1=tracks[0],
-            points2=tracks[1],
+            points1=trimmed_tracks[0],
+            points2=trimmed_tracks[1],
             cameraMatrix=self.camera_matrix,
             distanceThresh=self.recover_pose_reconstruction_distance_threshold,
-            mask=five_pt_mask.copy()
-            # mask=None
+            mask=five_pt_mask.copy(),
         )
-        _, R, T, pose_mask, points_4d = result
 
         print(
             "P: {}".format(
@@ -242,33 +242,30 @@ class BasePipeline:
             )
         )
 
+        # filter out 3d_points and point_indexes according to mask
+        final_mask = pose_mask.squeeze().astype(np.bool)
+        point_indexes = np.arange(num_points)[track_mask][final_mask]
+
+        good_points_3d = cv2.convertPointsFromHomogeneous(
+            points_4d.transpose()
+        ).squeeze()
+
+        points_3d = np.full((tracks.shape[1], 3), None, dtype=np.float_)
+        good_points_3d[~final_mask] = np.array([None, None, None])
+        points_3d[track_mask] = good_points_3d
+
+        # create point bool mask
+        points_mask = ~np.isnan(points_3d).any(axis=1)
+
         # Convert it back to first camera base system
         R, T = R.transpose(), np.matmul(R.transpose(), -T)
 
-        # filter out 3d_points and point_indexes according to mask
-        final_mask = pose_mask.squeeze().astype(np.bool)
-        points_3d = cv2.convertPointsFromHomogeneous(points_4d.transpose()).squeeze()
-        points_3d = points_3d[final_mask]
-
-        # create point index mask
-        point_indexes = np.arange(num_points)[track_mask][final_mask]
-
-        assert len(points_3d) == len(point_indexes)
-
-        return R, T, points_3d, point_indexes
+        return R, T, good_points_3d, points_mask
 
     def _reproject_tracks_to_3d(self, R_1, T_1, R_2, T_2, tracks):
         assert (
             tracks.shape[0] == 2
         ), "Can't do reprojection with {} cameras, 2 are needed".format(tracks.shape[0])
-
-        # Remove all points that don't have correspondence between frames
-        num_points = tracks.shape[1]
-        track_mask = [
-            bool((tracks[:, point_id] > 0).all()) for point_id in range(num_points)
-        ]
-        points_index_mask = np.arange(num_points)[track_mask]
-        tracks = tracks[:, track_mask]
 
         P1 = np.matmul(self.camera_matrix, np.hstack((R_1, T_1)))
         P2 = np.matmul(self.camera_matrix, np.hstack((R_2, T_2)))
@@ -280,5 +277,6 @@ class BasePipeline:
             projPoints2=tracks[1].transpose(),
         )
         points_3d = cv2.convertPointsFromHomogeneous(points_4d.transpose()).squeeze()
+        track_pair_mask = ~utils.get_nan_mask(points_3d)
 
-        return points_3d, points_index_mask
+        return points_3d, track_pair_mask
