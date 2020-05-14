@@ -176,12 +176,14 @@ class BasePipeline:
             (R is None) ^ (T is None)
         ), "Either both R and T are None or none of the two"
 
+        r_vec = None if R is None else cv2.Rodrigues(R)[0]
+
         retval, R, T = cv2.solvePnP(
             objectPoints=points_3d,
             imagePoints=track_slice,
             cameraMatrix=self.camera_matrix,
             distCoeffs=None,
-            rvec=None if R is None else cv2.Rodrigues(R)[0],
+            rvec=r_vec,
             tvec=T,
             useExtrinsicGuess=use_extrinsic_gress,
             flags=cv2.SOLVEPNP_ITERATIVE,

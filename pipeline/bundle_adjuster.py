@@ -35,6 +35,33 @@ class BundleAdjuster:
         self.optimized_cameras = None
 
     def run(self, point_cloud, Rs, Ts, tracks, track_index_masks):
+        (
+            camera_params,
+            points_3d,
+            points_2d,
+            camera_indexes,
+            point_indexes,
+        ) = self._prepare_optimization_input(
+            point_cloud, Rs, Ts, tracks, track_index_masks
+        )
+
+        # Optimize
+        optimized_cameras, optimized_points = self.optimize(
+            camera_params=camera_params,
+            points_3d=points_3d,
+            points_2d=points_2d,
+            camera_indices=camera_indexes,
+            point_indices=point_indexes,
+        )
+        point_cloud, Rs, Ts = self._parse_optimization_result(
+            point_cloud, optimized_cameras, optimized_points
+        )
+
+        return point_cloud, Rs, Ts
+
+    def _prepare_optimization_input(
+        self, point_cloud, Rs, Ts, tracks, track_index_masks
+    ):
         assert len(Rs) == len(Ts) == len(tracks) == len(track_index_masks)
 
         camera_params = []
@@ -42,7 +69,6 @@ class BundleAdjuster:
         camera_indexes = np.empty((0,), dtype=int)
         point_indexes = np.empty((0,), dtype=int)
 
-        # STEP 1: Convert from pipeline style to BA style ======================
         for R, T in zip(Rs, Ts):
             R, T = R.transpose(), np.matmul(R.transpose(), -T)
             camera_params += [np.vstack((cv2.Rodrigues(R)[0], T)).reshape(-1)]
@@ -56,28 +82,25 @@ class BundleAdjuster:
         assert len(camera_indexes) == len(point_indexes) == len(points_2d)
 
         not_nan_mask = ~utils.get_nan_mask(point_cloud)
-        # END OF STEP 1 ========================================================
 
-        # STEP 2: Optimize =====================================================
-        optimized_cameras, optimized_points = self.optimize(
-            camera_params=camera_params,
-            points_3d=point_cloud[not_nan_mask],
-            points_2d=points_2d,
-            camera_indices=camera_indexes,
-            point_indices=point_indexes,
-        )
-        # END OF STEP 2 ========================================================
+        points_3d = point_cloud[not_nan_mask]
+        # FIXME: point_indexes should reference existing points in the trimmed point cloud and not in the sparse one
 
-        # STEP 1: Convert back to pipeline style from BA style =================
+        return camera_params, points_3d, points_2d, camera_indexes, point_indexes
+
+    def _parse_optimization_result(
+        self, optimized_cameras, optimized_points, point_cloud
+    ):
+        # Convert back to pipeline style from BA style
         Rs = []
         Ts = []
+
+        not_nan_mask = ~utils.get_nan_mask(point_cloud)
         point_cloud[not_nan_mask] = optimized_points
 
         for camera in optimized_cameras:
             Rs += [cv2.Rodrigues(camera[:3])[0]]
             Ts += [camera[3:].reshape((3, -1))]
-
-        # END OF STEP 3 ========================================================
 
         return point_cloud, Rs, Ts
 
