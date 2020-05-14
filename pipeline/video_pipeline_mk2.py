@@ -74,7 +74,7 @@ class VideoPipelineMK2(BasePipeline):
         prev_track_slice = None
 
         points_3d = None
-        point_indexes = None
+        points_mask = None
 
         Rs = [np.eye(3)]
         Ts = [np.zeros((3, 1))]
@@ -83,7 +83,7 @@ class VideoPipelineMK2(BasePipeline):
         # Loop through frames (using generators)
         for (
             next_track_slice,
-            next_track_slice_index_mask,
+            next_track_slice_mask,
             is_new_feature_set,
         ) in self._process_next_frame(file):
             if is_new_feature_set:
@@ -95,20 +95,30 @@ class VideoPipelineMK2(BasePipeline):
                 continue
 
             if points_3d is None:
-                R, T, points_3d, point_indexes = self._get_pose_from_two_tracks(
+                R, T, points_3d, points_mask = self._get_pose_from_two_tracks(
                     np.array([prev_track_slice, next_track_slice])
                 )
-                if len(points_3d) < 10:
+                if points_mask.sum() < 10:
                     points_3d = None
                     continue
 
                 stored_points = np.append(stored_points, points_3d, axis=0)
             else:
                 # check if a mask is needed for track slice or points_3d
-                track_slice = next_track_slice[point_indexes]
-                not_nan_mask = ~utils.get_nan_mask(track_slice)
+                # track_slice = next_track_slice[points_mask]
+                # not_nan_mask = ~utils.get_nan_mask(track_slice)
+                # R, T = self._get_pose_from_points_and_projection(
+                #     track_slice[not_nan_mask], points_3d[not_nan_mask]
+                # )
+                track_slice_mask = ~utils.get_nan_mask(next_track_slice)
+                point_cloud_mask = ~utils.get_nan_mask(points_3d)
+                projection_mask = track_slice_mask & point_cloud_mask
+                # not_nan_mask = ~utils.get_nan_mask(track_pair[1][point_cloud_index_mask])
+
+                # refine R and T based on previous point cloud
                 R, T = self._get_pose_from_points_and_projection(
-                    track_slice[not_nan_mask], points_3d[not_nan_mask]
+                    track_slice=next_track_slice[projection_mask],
+                    points_3d=points_3d[projection_mask],
                 )
 
             Rs += [R]

@@ -90,12 +90,9 @@ class VideoPipelineMK1(BasePipeline):
             tracks = np.array([prev_track_slice, next_track_slice])
 
             # calculate camera 2 position relative to camera 1
-            (
-                rel_R,
-                rel_T,
-                rel_points_3d,
-                points_indexes,
-            ) = self._get_pose_from_two_tracks(tracks)
+            (rel_R, rel_T, rel_points_3d, point_mask,) = self._get_pose_from_two_tracks(
+                tracks
+            )
             if rel_R is None:
                 continue
 
@@ -110,7 +107,7 @@ class VideoPipelineMK1(BasePipeline):
 
             # store everything for later use
             stored_points = self._store_new_points(
-                stored_points, abs_points_3d, points_indexes, feature_set_counter
+                stored_points, abs_points_3d, point_mask, feature_set_counter
             )
             Rs += [comp_R]
             Ts += [comp_T]
@@ -128,9 +125,10 @@ class VideoPipelineMK1(BasePipeline):
     # =================== INTERNAL FUNCTIONS ===========================================================================
 
     def _store_new_points(
-        self, stored_points, points_3d, points_indexes, feature_set_counter
+        self, stored_points, points_3d, point_mask, feature_set_counter
     ):
-        for point_index, point in zip(points_indexes, points_3d):
+        point_indexes = np.arange(len(points_3d))[point_mask]
+        for point_index, point in zip(point_indexes, points_3d):
             point_index += feature_set_counter * self.feature_params["maxCorners"]
 
             if point_index not in stored_points:

@@ -168,7 +168,7 @@ class VideoPipelineMK3(BasePipeline):
             # refine R and T based on previous point cloud
             R, T = self._get_pose_from_points_and_projection(
                 track_slice=track_pair[1][projection_mask],
-                points_3d=point_cloud[: len(projection_mask)][projection_mask],
+                points_3d=point_cloud[projection_mask],
                 R=R,
                 T=T,
             )

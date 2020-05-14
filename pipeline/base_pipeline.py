@@ -260,7 +260,7 @@ class BasePipeline:
         # Convert it back to first camera base system
         R, T = R.transpose(), np.matmul(R.transpose(), -T)
 
-        return R, T, good_points_3d, points_mask
+        return R, T, points_3d, points_mask
 
     def _reproject_tracks_to_3d(self, R_1, T_1, R_2, T_2, tracks):
         assert (

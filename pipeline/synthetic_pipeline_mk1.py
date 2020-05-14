@@ -30,7 +30,7 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
 
         # camera arbitraria
         self.camera_matrix = np.array(
-            [[500, 0.0, 500], [0.0, 500, 500], [0.0, 0.0, 1.0],], dtype=np.float_
+            [[500, 0.0, 500], [0.0, 500, 500], [0.0, 0.0, 1.0]], dtype=np.float_
         )
 
         self.dir = None
@@ -74,8 +74,12 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
             frame_counter += 1
 
     def _get_synthetic_points(self):
-        # points_3d = np.array(list(itertools.product([9, 10, 11], [4, 5, 6], [-1, 0, 1])), dtype=np.float_)
-        # points_3d = np.array(list(itertools.product([9, 11], [4, 6], [-1, 1])), dtype=np.float_)
+        # points_3d = np.array(
+        #     list(itertools.product([9, 10, 11], [4, 5, 6], [-1, 0, 1])), dtype=np.float_
+        # )
+        # points_3d = np.array(
+        #     list(itertools.product([9, 11], [4, 6], [-1, 1])), dtype=np.float_
+        # )
         points_3d = np.array(
             list(itertools.product([8, 9, 10, 11, 12], [4, 5, 6], [0]))
             + list(itertools.product([8, 9, 10], [4, 5], [1]))
@@ -97,7 +101,7 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
                 np.matmul(r1, r3),
                 np.matmul(r1, np.matmul(r3, r2)),
                 np.matmul(r1, np.matmul(r3, np.matmul(r3, r3))),
-                np.matmul(r1, r1),
+                # np.matmul(r1, r1),
             ]
         )
         return Rs
@@ -105,7 +109,13 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
     def _get_synthetic_camera_translations(self):
         # vetores de translação das câmeras na base global
         Ts = np.array(
-            [[10, 0, 0], [15, 5, 0], [10, 10, 0], [5, 5, 0], [10, 5, 5],],
+            [
+                [10, 0, 0],
+                [15, 5, 0],
+                [10, 10, 0],
+                [5, 5, 0],
+                # [10, 5, 5],
+            ],
             dtype=np.float_,
         )
         return Ts
