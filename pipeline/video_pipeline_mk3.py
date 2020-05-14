@@ -116,16 +116,16 @@ class VideoPipelineMK3(BasePipeline):
 
             assert len(Rs) == len(Ts) == len(tracks)
 
-            # perform intermediate BA step
-            optimized_cloud_slice, Rs, Ts = self.bundle_adjuster.run(
-                cloud_slice, Rs, Ts, tracks, track_index_masks
-            )
-            cloud_slice[:] = optimized_cloud_slice
+            # # perform intermediate BA step
+            # optimized_cloud_slice, Rs, Ts = self.bundle_adjuster.run(
+            #     cloud_slice, Rs, Ts, tracks, track_index_masks
+            # )
+            # cloud_slice[:] = optimized_cloud_slice
 
-        # # perform final BA step
-        # cloud, Rs, Ts = self.bundle_adjuster.run(
-        #     cloud, Rs, Ts, tracks, track_index_masks
-        # )
+        # perform final BA step
+        cloud, Rs, Ts = self.bundle_adjuster.run(
+            cloud_slice, Rs, Ts, tracks, track_index_masks
+        )
 
         # when all frames are processed, plot result
         utils.write_to_viz_file(self.camera_matrix, Rs, Ts, cloud)

@@ -98,9 +98,9 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
             [
                 r1,
                 np.matmul(r1, r3),
-                # np.matmul(r1, np.matmul(r3, r2)),
-                # np.matmul(r1, np.matmul(r3, np.matmul(r3, r3))),
-                # np.matmul(r1, r1),
+                np.matmul(r1, np.matmul(r3, r2)),
+                np.matmul(r1, np.matmul(r3, np.matmul(r3, r3))),
+                np.matmul(r1, r1),
             ]
         )
         return Rs
@@ -108,13 +108,7 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
     def _get_synthetic_camera_translations(self):
         # vetores de translação das câmeras na base global
         Ts = np.array(
-            [
-                [10, 0, 0],
-                [15, 5, 0],
-                # [10, 10, 0],
-                # [5, 5, 0],
-                # [10, 5, 5],
-            ],
+            [[10, 0, 0], [15, 5, 0], [10, 10, 0], [5, 5, 0], [10, 5, 5],],
             dtype=np.float_,
         )
         return Ts

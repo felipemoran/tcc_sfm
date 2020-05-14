@@ -18,6 +18,8 @@ class SyntheticPipelineMK3(SyntheticPipelineMK2, VideoPipelineMK3):
             [[500, 0.0, 500], [0.0, 500, 500], [0.0, 0.0, 1.0],], dtype=np.float_
         )
 
+        self.bundle_adjuster.camera_matrix = self.camera_matrix
+
     def run(self):
         return VideoPipelineMK3.run(self)
 

@@ -99,8 +99,11 @@ class BundleAdjuster:
         point_cloud[not_nan_mask] = optimized_points
 
         for camera in optimized_cameras:
-            Rs += [cv2.Rodrigues(camera[:3])[0]]
-            Ts += [camera[3:].reshape((3, -1))]
+            R = cv2.Rodrigues(camera[:3])[0]
+            T = camera[3:].reshape((3, -1))
+            R, T = utils.invert_RT(R, T)
+            Rs += [R]
+            Ts += [T]
 
         return point_cloud, Rs, Ts
 
