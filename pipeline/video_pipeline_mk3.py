@@ -116,12 +116,12 @@ class VideoPipelineMK3(BasePipeline):
 
             assert len(Rs) == len(Ts) == len(tracks)
 
-        #     # perform intermediate BA step
-        #     optimized_cloud_slice, Rs, Ts = self.bundle_adjuster.run(
-        #         cloud_slice, Rs, Ts, tracks, track_index_masks
-        #     )
-        #     cloud_slice[:] = optimized_cloud_slice
-        #
+            # perform intermediate BA step
+            optimized_cloud_slice, Rs, Ts = self.bundle_adjuster.run(
+                cloud_slice, Rs, Ts, tracks, track_index_masks
+            )
+            cloud_slice[:] = optimized_cloud_slice
+
         # # perform final BA step
         # cloud, Rs, Ts = self.bundle_adjuster.run(
         #     cloud, Rs, Ts, tracks, track_index_masks
@@ -158,7 +158,7 @@ class VideoPipelineMK3(BasePipeline):
             R, T = utils.compose_RTs(R_rel, T_rel, prev_R, prev_T)
 
             # then convert back to i's perspective but now referencing frame 0 and not frame i-1
-            R, T = R.transpose(), np.matmul(R.transpose(), -T)
+            R, T = utils.invert_RT(R, T)
 
             # create new mask based on existing point cloud's and newly created track's
             track_slice_mask = ~utils.get_nan_mask(track_pair[1])

@@ -258,7 +258,7 @@ class BasePipeline:
         points_mask = ~np.isnan(points_3d).any(axis=1)
 
         # Convert it back to first camera base system
-        R, T = R.transpose(), np.matmul(R.transpose(), -T)
+        R, T = utils.invert_RT(R, T)
 
         return R, T, points_3d, points_mask
 

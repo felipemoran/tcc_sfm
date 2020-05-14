@@ -54,14 +54,13 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
         feature_pack_id = 0
         frame_counter = 0
 
-        for index, (R, t) in enumerate(zip(Rs, Ts)):
+        for index, (R, T) in enumerate(zip(Rs, Ts)):
             # convert to the camera base, important!
-            t_cam = np.matmul(R.transpose(), -t)
-            R_cam = R.transpose()
+            R_cam, T_cam = utils.invert_RT(R, T)
             R_cam_vec = cv2.Rodrigues(R_cam)[0]
 
             track_slice = cv2.projectPoints(
-                points_3d, R_cam_vec, t_cam, self.camera_matrix, None
+                points_3d, R_cam_vec, T_cam, self.camera_matrix, None
             )[0].squeeze()
 
             # track_index_mask = np.arange(len(track_slice))
@@ -99,8 +98,8 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
             [
                 r1,
                 np.matmul(r1, r3),
-                np.matmul(r1, np.matmul(r3, r2)),
-                np.matmul(r1, np.matmul(r3, np.matmul(r3, r3))),
+                # np.matmul(r1, np.matmul(r3, r2)),
+                # np.matmul(r1, np.matmul(r3, np.matmul(r3, r3))),
                 # np.matmul(r1, r1),
             ]
         )
@@ -112,8 +111,8 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
             [
                 [10, 0, 0],
                 [15, 5, 0],
-                [10, 10, 0],
-                [5, 5, 0],
+                # [10, 10, 0],
+                # [5, 5, 0],
                 # [10, 5, 5],
             ],
             dtype=np.float_,

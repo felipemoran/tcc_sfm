@@ -34,16 +34,14 @@ class BundleAdjuster:
         self.optimized_points = None
         self.optimized_cameras = None
 
-    def run(self, point_cloud, Rs, Ts, tracks, track_index_masks):
+    def run(self, point_cloud, Rs, Ts, tracks, track_masks):
         (
             camera_params,
             points_3d,
             points_2d,
             camera_indexes,
             point_indexes,
-        ) = self._prepare_optimization_input(
-            point_cloud, Rs, Ts, tracks, track_index_masks
-        )
+        ) = self._prepare_optimization_input(point_cloud, Rs, Ts, tracks, track_masks)
 
         # Optimize
         optimized_cameras, optimized_points = self.optimize(
@@ -54,15 +52,15 @@ class BundleAdjuster:
             point_indices=point_indexes,
         )
         point_cloud, Rs, Ts = self._parse_optimization_result(
-            point_cloud, optimized_cameras, optimized_points
+            point_cloud=point_cloud,
+            optimized_cameras=optimized_cameras,
+            optimized_points=optimized_points,
         )
 
         return point_cloud, Rs, Ts
 
-    def _prepare_optimization_input(
-        self, point_cloud, Rs, Ts, tracks, track_index_masks
-    ):
-        assert len(Rs) == len(Ts) == len(tracks) == len(track_index_masks)
+    def _prepare_optimization_input(self, point_cloud, Rs, Ts, tracks, track_masks):
+        assert len(Rs) == len(Ts) == len(tracks) == len(track_masks)
 
         camera_params = []
         points_2d = np.empty((0, 2), dtype=np.float_)
@@ -70,26 +68,28 @@ class BundleAdjuster:
         point_indexes = np.empty((0,), dtype=int)
 
         for R, T in zip(Rs, Ts):
-            R, T = R.transpose(), np.matmul(R.transpose(), -T)
+            R, T = utils.invert_RT(R, T)
             camera_params += [np.vstack((cv2.Rodrigues(R)[0], T)).reshape(-1)]
-        camera_params = np.array(camera_params, dtype=int)
+        camera_params = np.array(camera_params, dtype=np.float_)
         assert camera_params.shape == (len(Rs), 6)
 
-        for index, (track, index_mask) in enumerate(zip(tracks, track_index_masks)):
-            camera_indexes = np.append(camera_indexes, [[index] * index_mask.shape[0]])
-            point_indexes = np.append(point_indexes, index_mask)
-            points_2d = np.vstack((points_2d, track[index_mask]))
+        cloud_not_nan_mask = ~utils.get_nan_mask(point_cloud)
+
+        for index, (track, track_mask) in enumerate(zip(tracks, track_masks)):
+            mask = track_mask & cloud_not_nan_mask
+
+            camera_indexes = np.append(camera_indexes, np.full(mask.sum(), index))
+            point_indexes = np.append(point_indexes, np.arange(len(mask))[mask])
+            points_2d = np.vstack((points_2d, track[mask]))
+
         assert len(camera_indexes) == len(point_indexes) == len(points_2d)
 
-        not_nan_mask = ~utils.get_nan_mask(point_cloud)
-
-        points_3d = point_cloud[not_nan_mask]
-        # FIXME: point_indexes should reference existing points in the trimmed point cloud and not in the sparse one
+        points_3d = point_cloud[cloud_not_nan_mask]
 
         return camera_params, points_3d, points_2d, camera_indexes, point_indexes
 
     def _parse_optimization_result(
-        self, optimized_cameras, optimized_points, point_cloud
+        self, point_cloud, optimized_cameras, optimized_points
     ):
         # Convert back to pipeline style from BA style
         Rs = []

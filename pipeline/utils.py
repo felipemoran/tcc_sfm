@@ -68,3 +68,7 @@ def create_bool_mask(length, index_mask):
     bool_mask = np.full(length, False)
     bool_mask[index_mask] = True
     return bool_mask
+
+
+def invert_RT(R, T):
+    return R.transpose(), np.matmul(R.transpose(), -T)
