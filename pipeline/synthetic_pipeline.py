@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from math import pi, sqrt
 from pipeline import utils
 from pipeline.base_pipeline import BasePipeline
-from pipeline.video_pipeline_mk1 import VideoPipelineMK1
+from pipeline.video_pipeline import VideoPipeline
 
 np.set_printoptions(3, suppress=True)
 
@@ -24,7 +24,7 @@ TYPE_CAMERA = 1
 TYPE_POINT = 2
 
 
-class SyntheticPipelineMK1(VideoPipelineMK1):
+class SyntheticPipeline(VideoPipeline):
     def __init__(self):
         super().__init__(None)
 
@@ -33,10 +33,8 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
             [[500, 0.0, 500], [0.0, 500, 500], [0.0, 0.0, 1.0]], dtype=np.float_
         )
 
-        self.dir = None
-        # self.find_essential_mat_threshold = 2
-        # self.find_essential_mat_prob = 0.999
-        # self.recover_pose_reconstruction_distance_threshold = 50
+        self.bundle_adjuster.camera_matrix = self.camera_matrix
+        self.synthetic_case = 2
 
     def _get_video(self, file_path):
         return None, None
@@ -56,7 +54,7 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
 
         for index, (R, T) in enumerate(zip(Rs, Ts)):
             # convert to the camera base, important!
-            R_cam, T_cam = utils.invert_RT(R, T)
+            R_cam, T_cam = utils.invert_reference_frame(R, T)
             R_cam_vec = cv2.Rodrigues(R_cam)[0]
 
             track_slice = cv2.projectPoints(
@@ -107,13 +105,21 @@ class SyntheticPipelineMK1(VideoPipelineMK1):
 
     def _get_synthetic_camera_translations(self):
         # vetores de translação das câmeras na base global
-        Ts = np.array(
-            [[10, 0, 0], [15, 5, 0], [10, 10, 0], [5, 5, 0], [10, 5, 5],],
-            dtype=np.float_,
-        )
+        if self.synthetic_case == 1:
+            Ts = np.array(
+                [[10, 0, 0], [15, 5, 0], [10, 10, 0], [5, 5, 0], [10, 5, 5],],
+                dtype=np.float_,
+            )
+        elif self.synthetic_case == 2:
+            Ts = np.array(
+                [[10, 0, 0], [20, 5, 0], [10, 12.5, 0], [5, 5, 0], [10, 5, 5],],
+                dtype=np.float_,
+            )
+        else:
+            raise ValueError
         return Ts
 
 
 if __name__ == "__main__":
-    sp = SyntheticPipelineMK1()
+    sp = SyntheticPipeline()
     sp.run()

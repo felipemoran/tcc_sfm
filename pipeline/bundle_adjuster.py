@@ -68,7 +68,7 @@ class BundleAdjuster:
         point_indexes = np.empty((0,), dtype=int)
 
         for R, T in zip(Rs, Ts):
-            R, T = utils.invert_RT(R, T)
+            R, T = utils.invert_reference_frame(R, T)
             camera_params += [np.vstack((cv2.Rodrigues(R)[0], T)).reshape(-1)]
         camera_params = np.array(camera_params, dtype=np.float_)
         assert camera_params.shape == (len(Rs), 6)
@@ -79,7 +79,10 @@ class BundleAdjuster:
             mask = track_mask & cloud_not_nan_mask
 
             camera_indexes = np.append(camera_indexes, np.full(mask.sum(), index))
-            point_indexes = np.append(point_indexes, np.arange(len(mask))[mask])
+            point_indexes = np.append(
+                point_indexes,
+                np.arange(cloud_not_nan_mask.sum())[track_mask[cloud_not_nan_mask]],
+            )
             points_2d = np.vstack((points_2d, track[mask]))
 
         assert len(camera_indexes) == len(point_indexes) == len(points_2d)
@@ -101,7 +104,7 @@ class BundleAdjuster:
         for camera in optimized_cameras:
             R = cv2.Rodrigues(camera[:3])[0]
             T = camera[3:].reshape((3, -1))
-            R, T = utils.invert_RT(R, T)
+            R, T = utils.invert_reference_frame(R, T)
             Rs += [R]
             Ts += [T]
 

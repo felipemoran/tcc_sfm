@@ -8,7 +8,7 @@ from pipeline.base_pipeline import BasePipeline
 from pipeline.bundle_adjuster import BundleAdjuster
 
 
-class VideoPipelineMK3(BasePipeline):
+class VideoPipeline(BasePipeline):
     def __init__(self, dir, save_debug_visualization=False):
         self.dir = dir
         self.save_debug_visualization = save_debug_visualization
@@ -24,7 +24,7 @@ class VideoPipelineMK3(BasePipeline):
 
         # params for ShiTomasi corner detection
         self.feature_params = {
-            "maxCorners": 200,
+            "maxCorners": 100,
             "qualityLevel": 0.5,
             "minDistance": 15,
             "blockSize": 10,
@@ -49,15 +49,31 @@ class VideoPipelineMK3(BasePipeline):
 
         self.recover_pose_reconstruction_distance_threshold = 50
         self.find_essential_mat_threshold = 3
-        self.find_essential_mat_prob = 0.98
+        self.find_essential_mat_prob = 0.99
 
         self.min_num_points_in_point_cloud = 10
+
+        self.min_points_five_pt_algorithm = 6
+        self.min_num_points_for_solvepnp = 6
 
         self.debug_colors = np.random.randint(
             0, 255, (self.feature_params["maxCorners"], 3)
         )
 
         self.bundle_adjuster = BundleAdjuster(self.camera_matrix, verbose=2)
+
+        self.use_five_pt_algorithm = True
+        self.use_solve_pnp = True
+        self.reproject_tracks = True
+
+        self.use_ba_at_end = True
+        self.use_rolling_ba = True
+        self.ba_window_length = 25
+        self.ba_period = 10
+
+        assert (
+            self.use_five_pt_algorithm or self.use_solve_pnp
+        ), "At least one algorithm between fiv-pt and solvepnp must be used"
 
     def run(self):
         # Start by finding the images
@@ -80,17 +96,28 @@ class VideoPipelineMK3(BasePipeline):
             tracks += [next_track_slice]
 
             counter += 1
+            track_index_masks += [next_track_slice_mask]
+
             if is_new_feature_set:
-                track_index_masks += [next_track_slice_mask]
+                # track_index_masks += [next_track_slice_mask]
                 cloud_slice = cloud[: len(next_track_slice)]
                 assert len(tracks) == 1, "Resetting KLT features is not yet implemented"
                 continue
 
             track_pair = np.array(tracks[-2:])
 
-            R, T, new_points, new_points_mask = self._calculate_pose(
+            R, T, new_points = self._calculate_pose(
                 track_pair, Rs[-1], Ts[-1], cloud_slice
             )
+            if self.reproject_tracks:
+                # recalculate points based on refined R and T
+                new_points = self._reproject_tracks_to_3d(
+                    R_1=Rs[-1].transpose(),
+                    T_1=np.matmul(Rs[-1].transpose(), -Ts[-1]),
+                    R_2=R.transpose(),
+                    T_2=np.matmul(R.transpose(), -T),
+                    tracks=track_pair,
+                )
 
             if R is None:
                 # Last track slice wasn't good (not enough points) so let's drop it
@@ -108,24 +135,36 @@ class VideoPipelineMK3(BasePipeline):
                 continue
 
             # merge new points with existing point cloud
-            self._merge_points_into_cloud(cloud_slice, new_points, new_points_mask)
+            if len(new_points) > 0:
+                self._merge_points_into_cloud(cloud_slice, new_points)
 
             Rs += [R]
             Ts += [T]
-            track_index_masks += [new_points_mask]
 
             assert len(Rs) == len(Ts) == len(tracks)
 
-            # # perform intermediate BA step
-            # optimized_cloud_slice, Rs, Ts = self.bundle_adjuster.run(
-            #     cloud_slice, Rs, Ts, tracks, track_index_masks
-            # )
-            # cloud_slice[:] = optimized_cloud_slice
+            if self.use_rolling_ba:
+                # perform intermediate BA step
+                if counter % self.ba_period == 0:
+                    bawl = self.ba_window_length
+                    (
+                        cloud_slice[:],
+                        Rs[-bawl:],
+                        Ts[-bawl:],
+                    ) = self.bundle_adjuster.run(
+                        cloud_slice,
+                        Rs[-bawl:],
+                        Ts[-bawl:],
+                        tracks[-bawl:],
+                        track_index_masks[-bawl:],
+                    )
+                # cloud_slice[:] = optimized_cloud_slice
 
-        # perform final BA step
-        cloud, Rs, Ts = self.bundle_adjuster.run(
-            cloud_slice, Rs, Ts, tracks, track_index_masks
-        )
+        if self.use_ba_at_end:
+            # perform final BA step
+            cloud, Rs, Ts = self.bundle_adjuster.run(
+                cloud_slice, Rs, Ts, tracks, track_index_masks
+            )
 
         # when all frames are processed, plot result
         utils.write_to_viz_file(self.camera_matrix, Rs, Ts, cloud)
@@ -134,68 +173,51 @@ class VideoPipelineMK3(BasePipeline):
     def _calculate_pose(self, track_pair, prev_R, prev_T, point_cloud):
         point_cloud_mask = ~utils.get_nan_mask(point_cloud)
         n_points_in_point_cloud = point_cloud_mask.sum()
+        track_pair_mask = ~utils.get_nan_mask(np.hstack(track_pair))
 
-        # ------ STEP 1 ----------------------------------------------------------------------------------------
-        # calculate R, T_un, points with 2 tracks (5 point + recover pose)
-        R_rel, T_rel, points_3d, points_3d_mask = self._get_pose_from_two_tracks(
-            track_pair
-        )
-        # ------ END STEP 1 ------------------------------------------------------------------------------------
+        R, T = None, None
+        points_3d = np.empty((0, 3), dtype=np.float_)
 
-        assert (
-            n_points_in_point_cloud == 0
-            or n_points_in_point_cloud > self.min_num_points_in_point_cloud
-        ), "Point cloud should have zero points or more than the minimum and not something in between"
+        if self.use_five_pt_algorithm or n_points_in_point_cloud == 0:
+            if track_pair_mask.sum() < self.min_points_five_pt_algorithm:
+                return None, None, None
 
-        # if not enough points are in the cloud and track slice at the same time skip refine step
-        if (
-            n_points_in_point_cloud > self.min_num_points_in_point_cloud
-            and R_rel is not None
-        ):
+            R, T, points_3d = self._run_five_pt_algorithm(track_pair)
 
-            # ------ STEP 2 ----------------------------------------------------------------------------------------
             # first convert R and T from camera i to 0's perspective
-            R, T = utils.compose_RTs(R_rel, T_rel, prev_R, prev_T)
+            points_3d = utils.translate_points_to_base_frame(prev_R, prev_T, points_3d)
 
-            # then convert back to i's perspective but now referencing frame 0 and not frame i-1
-            R, T = utils.invert_RT(R, T)
+            R, T = utils.compose_RTs(R, T, prev_R, prev_T)
 
-            # create new mask based on existing point cloud's and newly created track's
-            track_slice_mask = ~utils.get_nan_mask(track_pair[1])
-            projection_mask = track_slice_mask & point_cloud_mask
-            # not_nan_mask = ~utils.get_nan_mask(track_pair[1][point_cloud_index_mask])
+        # create new mask based on existing point cloud's and newly created track's
+        track_slice_mask = ~utils.get_nan_mask(track_pair[1])
+        proj_mask = track_slice_mask & point_cloud_mask
 
-            # refine R and T based on previous point cloud
-            R, T = self._get_pose_from_points_and_projection(
-                track_slice=track_pair[1][projection_mask],
-                points_3d=point_cloud[projection_mask],
-                R=R,
-                T=T,
-            )
-            # Result is in camera 0's coordinate system
-            # ------ END STEP 2 ------------------------------------------------------------------------------------
+        # Not enough points for reconstruction of pose
+        if not self.use_solve_pnp or proj_mask.sum() < self.min_num_points_for_solvepnp:
+            return R, T, points_3d
 
-            # ------ STEP 3 ----------------------------------------------------------------------------------------
-            # recalculate points based on refined R and T
-            points_3d, points_3d_mask = self._reproject_tracks_to_3d(
-                R_1=prev_R.transpose(),
-                T_1=np.matmul(prev_R.transpose(), -prev_T),
-                R_2=R.transpose(),
-                T_2=np.matmul(R.transpose(), -T),
-                tracks=track_pair,
-            )
-            # ------ END STEP 3 ------------------------------------------------------------------------------------
-        else:
-            R, T = R_rel, T_rel
+        if R is not None:
+            R, T = utils.invert_reference_frame(R, T)
 
-        return R, T, points_3d, points_3d_mask
+        # refine R and T based on previous point cloud
+        R, T = self._run_solvepnp(
+            track_slice=track_pair[1][proj_mask],
+            points_3d=point_cloud[proj_mask],
+            R=R,
+            T=T,
+        )
+        # Result is in camera 0's coordinate system
 
-    def _merge_points_into_cloud(self, point_cloud, new_points, new_points_mask):
+        return R, T, points_3d
+
+    def _merge_points_into_cloud(self, point_cloud, new_points):
         # check which points still have no data
-        nan_mask = np.isnan(point_cloud).any(axis=1)
+        new_points_mask = ~utils.get_nan_mask(new_points)
+        cloud_nan_mask = utils.get_nan_mask(point_cloud)
 
         # for those, replace nan by a value
-        replace_mask = nan_mask & new_points_mask
+        replace_mask = cloud_nan_mask & new_points_mask
         average_mask = new_points_mask & ~replace_mask
 
         # for the others, do the average (results in exponential smoothing)
@@ -218,7 +240,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     start = time.time()
-    sfm = VideoPipelineMK3(**vars(args))
+    sfm = VideoPipeline(**vars(args))
     sfm.run()
     elapsed = time.time() - start
     print("Elapsed {}".format(elapsed))

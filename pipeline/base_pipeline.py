@@ -164,10 +164,7 @@ class BasePipeline:
 
         return track_indexes, frame_features, track_slice
 
-    def _get_pose_from_points_and_projection(
-        self, track_slice, points_3d, R=None, T=None
-    ):
-        # TODO: try with useExtrinsicGuess=True
+    def _run_solvepnp(self, track_slice, points_3d, R=None, T=None):
         if R is not None and T is not None:
             use_extrinsic_gress = True
         else:
@@ -198,14 +195,14 @@ class BasePipeline:
 
         return R, T
 
-    def _get_pose_from_two_tracks(self, tracks):
+    def _run_five_pt_algorithm(self, tracks):
         # Remove all points that don't have correspondence between frames
         num_points = tracks.shape[1]
         track_mask = ~np.isnan(tracks).any(axis=(0, 2))
 
-        if track_mask.sum() <= 5:
-            print("Not enough points to run 5-point algorithm. Aborting")
-            return None, None, [], []
+        assert (
+            track_mask.sum() > 5
+        ), "Not enough points to run 5-point algorithm. Aborting"
 
         # Since findEssentialMat can't receive masks, we gotta "wrap" the inputs with one
         trimmed_tracks = tracks[:, track_mask]
@@ -254,13 +251,10 @@ class BasePipeline:
         good_points_3d[~final_mask] = np.array([None, None, None])
         points_3d[track_mask] = good_points_3d
 
-        # create point bool mask
-        points_mask = ~np.isnan(points_3d).any(axis=1)
-
         # Convert it back to first camera base system
-        R, T = utils.invert_RT(R, T)
+        R, T = utils.invert_reference_frame(R, T)
 
-        return R, T, points_3d, points_mask
+        return R, T, points_3d
 
     def _reproject_tracks_to_3d(self, R_1, T_1, R_2, T_2, tracks):
         assert (
@@ -279,4 +273,4 @@ class BasePipeline:
         points_3d = cv2.convertPointsFromHomogeneous(points_4d.transpose()).squeeze()
         track_pair_mask = ~utils.get_nan_mask(points_3d)
 
-        return points_3d, track_pair_mask
+        return points_3d

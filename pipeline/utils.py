@@ -70,5 +70,5 @@ def create_bool_mask(length, index_mask):
     return bool_mask
 
 
-def invert_RT(R, T):
+def invert_reference_frame(R, T):
     return R.transpose(), np.matmul(R.transpose(), -T)
