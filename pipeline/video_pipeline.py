@@ -1,79 +1,30 @@
-import cv2
 import argparse
 import numpy as np
 import time
+import dacite
 
+from ruamel.yaml import YAML
 from pipeline import utils
 from pipeline.base_pipeline import BasePipeline
 from pipeline.bundle_adjuster import BundleAdjuster
+from pipeline.config import VideoPipelineConfig
 
 
 class VideoPipeline(BasePipeline):
-    def __init__(self, dir, save_debug_visualization=False):
+    def __init__(
+        self,
+        dir: str,
+        config: VideoPipelineConfig,
+        display_klt_debug_frames: bool = False,
+    ) -> None:
         self.dir = dir
-        self.save_debug_visualization = save_debug_visualization
-
-        # Number of frames to skip between used frames (eg. 2 means using frames 1, 4, 7 and dropping 2, 3, 5, 6)
-        self.frames_to_skip = 1
-
-        # Number of frames for initial estimation
-        self.num_frames_initial_estimation = 10
-
-        # Number of frames between baseline reset. Hack to avoid further frames having no or few features
-        self.feature_reset_rate = 10000
-
-        # params for ShiTomasi corner detection
-        self.feature_params = {
-            "maxCorners": 100,
-            "qualityLevel": 0.5,
-            "minDistance": 15,
-            "blockSize": 10,
-        }
-
-        # Parameters for lucas kanade optical flow
-        self.lk_params = {
-            "winSize": (15, 15),
-            "maxLevel": 2,
-            "criteria": (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03),
-        }
+        self.display_klt_debug_frames = display_klt_debug_frames
+        self.config = config
 
         self.image_size = None
+        self.config.camera_matrix = np.array(self.config.camera_matrix)
 
-        self.camera_matrix = np.array(
-            [
-                [765.16859169, 0.0, 379.11876567],
-                [0.0, 762.38664643, 497.22086655],
-                [0.0, 0.0, 1.0],
-            ]
-        )
-
-        self.recover_pose_reconstruction_distance_threshold = 50
-        self.find_essential_mat_threshold = 3
-        self.find_essential_mat_prob = 0.99
-
-        self.min_num_points_in_point_cloud = 10
-
-        self.min_points_five_pt_algorithm = 6
-        self.min_num_points_for_solvepnp = 6
-
-        self.debug_colors = np.random.randint(
-            0, 255, (self.feature_params["maxCorners"], 3)
-        )
-
-        self.bundle_adjuster = BundleAdjuster(self.camera_matrix, verbose=2)
-
-        self.use_five_pt_algorithm = True
-        self.use_solve_pnp = True
-        self.reproject_tracks = True
-
-        self.use_ba_at_end = True
-        self.use_rolling_ba = True
-        self.ba_window_length = 25
-        self.ba_period = 10
-
-        assert (
-            self.use_five_pt_algorithm or self.use_solve_pnp
-        ), "At least one algorithm between fiv-pt and solvepnp must be used"
+        self.bundle_adjuster = BundleAdjuster(self.config.camera_matrix, verbose=2)
 
     def run(self):
         # Start by finding the images
@@ -83,7 +34,9 @@ class VideoPipeline(BasePipeline):
         Ts = [np.zeros((3, 1))]
         tracks = []
         track_index_masks = []
-        cloud = np.full((self.feature_params["maxCorners"], 3), None, dtype=np.float_)
+        cloud = np.full(
+            (self.config.klt.corner_selection.max_corners, 3), None, dtype=np.float_
+        )
         cloud_slice = None
 
         # Loop through frames (using generators)
@@ -109,7 +62,7 @@ class VideoPipeline(BasePipeline):
             R, T, new_points = self._calculate_pose(
                 track_pair, Rs[-1], Ts[-1], cloud_slice
             )
-            if self.reproject_tracks:
+            if self.config.use_reconstruct_tracks:
                 # recalculate points based on refined R and T
                 new_points = self._reproject_tracks_to_3d(
                     R_1=Rs[-1].transpose(),
@@ -128,7 +81,7 @@ class VideoPipeline(BasePipeline):
             n_points_in_point_cloud = (~utils.get_nan_mask(cloud_slice)).sum()
             if (
                 n_points_in_point_cloud == 0
-                and len(new_points) < self.min_num_points_in_point_cloud
+                and len(new_points) < self.config.min_number_of_points_in_cloud
             ):
                 # don't forget to reset track vector and drop old unused data
                 tracks = [tracks[-1]]
@@ -143,10 +96,10 @@ class VideoPipeline(BasePipeline):
 
             assert len(Rs) == len(Ts) == len(tracks)
 
-            if self.use_rolling_ba:
+            if self.config.bundle_adjustment.use_with_rolling_window:
                 # perform intermediate BA step
-                if counter % self.ba_period == 0:
-                    bawl = self.ba_window_length
+                if counter % self.config.bundle_adjustment.rolling_window.period == 0:
+                    bawl = self.config.bundle_adjustment.rolling_window.length
                     (
                         cloud_slice[:],
                         Rs[-bawl:],
@@ -160,14 +113,14 @@ class VideoPipeline(BasePipeline):
                     )
                 # cloud_slice[:] = optimized_cloud_slice
 
-        if self.use_ba_at_end:
+        if self.config.bundle_adjustment.use_at_end:
             # perform final BA step
             cloud, Rs, Ts = self.bundle_adjuster.run(
                 cloud_slice, Rs, Ts, tracks, track_index_masks
             )
 
         # when all frames are processed, plot result
-        utils.write_to_viz_file(self.camera_matrix, Rs, Ts, cloud)
+        utils.write_to_viz_file(self.config.camera_matrix, Rs, Ts, cloud)
         utils.call_viz()
 
     def _calculate_pose(self, track_pair, prev_R, prev_T, point_cloud):
@@ -178,8 +131,11 @@ class VideoPipeline(BasePipeline):
         R, T = None, None
         points_3d = np.empty((0, 3), dtype=np.float_)
 
-        if self.use_five_pt_algorithm or n_points_in_point_cloud == 0:
-            if track_pair_mask.sum() < self.min_points_five_pt_algorithm:
+        if self.config.use_five_pt_algorithm or n_points_in_point_cloud == 0:
+            if (
+                track_pair_mask.sum()
+                < self.config.five_point_algorithm.min_number_of_points
+            ):
                 return None, None, None
 
             R, T, points_3d = self._run_five_pt_algorithm(track_pair)
@@ -194,7 +150,10 @@ class VideoPipeline(BasePipeline):
         proj_mask = track_slice_mask & point_cloud_mask
 
         # Not enough points for reconstruction of pose
-        if not self.use_solve_pnp or proj_mask.sum() < self.min_num_points_for_solvepnp:
+        if (
+            not self.config.use_solve_pnp
+            or proj_mask.sum() < self.config.solvepnp.min_number_of_points
+        ):
             return R, T, points_3d
 
         if R is not None:
@@ -228,19 +187,25 @@ class VideoPipeline(BasePipeline):
 
 
 if __name__ == "__main__":
+    yaml = YAML()
+
+    with open("config.yaml", "r") as f:
+        config_raw = yaml.load(f)
+    config = dacite.from_dict(data=config_raw, data_class=VideoPipelineConfig)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("dir", help="Directory with image files for reconstructions")
     parser.add_argument(
         "-sd",
-        "--save_debug_visualization",
-        help="Save debug visualizations to files?",
+        "--display_klt_debug_frames",
+        help="Display KLT debug frames",
         action="store_true",
         default=False,
     )
     args = parser.parse_args()
 
     start = time.time()
-    sfm = VideoPipeline(**vars(args))
+    sfm = VideoPipeline(**vars(args), config=config)
     sfm.run()
     elapsed = time.time() - start
     print("Elapsed {}".format(elapsed))

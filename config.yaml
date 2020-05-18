@@ -1,0 +1,54 @@
+synthetic_case: false
+
+camera_matrix: [
+    [765.16859169, 0.0, 379.11876567],
+    [0.0, 762.38664643, 497.22086655],
+    [0.0, 0.0, 1.0],
+  ]
+
+use_five_pt_algorithm: true
+use_solve_pnp: true
+use_reconstruct_tracks: true
+
+min_number_of_points_in_cloud: 10
+
+klt:
+    frames_to_skip: 2
+    reset_period: 1000
+
+    corner_selection:
+        max_corners: 100
+        quality_level: 0.5
+        min_distance: 15
+        block_size: 10
+
+    optical_flow:
+        window_size:
+            width: 15
+            height: 15
+        max_level: 2
+        criteria:
+            # original: (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
+            # where cv2.TERM_CRITERIA_EPS = 2 and cv2.TERM_CRITERIA_COUNT = 1
+            criteria_sum: 3
+            max_iter: 10
+            eps: 0.003
+
+five_point_algorithm:
+    min_number_of_points: 6
+    threshold: 3
+    probability: 0.99
+
+recover_pose_algorithm:
+    distance_threshold: 50
+
+solvepnp:
+    min_number_of_points: 4
+
+bundle_adjustment:
+    use_with_rolling_window: false
+    use_at_end: false
+    rolling_window:
+        period: 10
+        length: 20
+    verbosity: 2
