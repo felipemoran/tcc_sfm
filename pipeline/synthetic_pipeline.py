@@ -5,6 +5,9 @@ import numpy as np
 from math import pi
 from pipeline import utils
 from pipeline.video_pipeline import VideoPipeline
+from config import VideoPipelineConfig
+from ruamel.yaml import YAML
+import dacite
 
 np.set_printoptions(3, suppress=True)
 
@@ -14,15 +17,12 @@ TYPE_POINT = 2
 
 
 class SyntheticPipeline(VideoPipeline):
-    def __init__(self):
-        super().__init__(None)
-
-        # camera arbitraria
-        self.camera_matrix = np.array(
+    def __init__(self, config):
+        config.camera_matrix = np.array(
             [[500, 0.0, 500], [0.0, 500, 500], [0.0, 0.0, 1.0]], dtype=np.float_
         )
+        super().__init__(None, config)
 
-        self.bundle_adjuster.camera_matrix = self.camera_matrix
         self.synthetic_case = 2
 
     def _get_video(self, file_path):
@@ -47,7 +47,7 @@ class SyntheticPipeline(VideoPipeline):
             R_cam_vec = cv2.Rodrigues(R_cam)[0]
 
             track_slice = cv2.projectPoints(
-                points_3d, R_cam_vec, T_cam, self.camera_matrix, None
+                points_3d, R_cam_vec, T_cam, self.config.camera_matrix, None
             )[0].squeeze()
 
             # track_index_mask = np.arange(len(track_slice))
@@ -110,5 +110,10 @@ class SyntheticPipeline(VideoPipeline):
 
 
 if __name__ == "__main__":
-    sp = SyntheticPipeline()
+    yaml = YAML()
+    with open("config.yaml", "r") as f:
+        config_raw = yaml.load(f)
+    config = dacite.from_dict(data=config_raw, data_class=VideoPipelineConfig)
+
+    sp = SyntheticPipeline(config)
     sp.run()
