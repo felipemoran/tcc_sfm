@@ -67,6 +67,7 @@ class RollingWindowConfig:
 
 @dataclass
 class BundleAdjustmentConfig:
+    use_with_first_pair: bool
     use_with_rolling_window: bool
     use_at_end: bool
     rolling_window: RollingWindowConfig

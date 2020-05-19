@@ -96,22 +96,19 @@ class VideoPipeline(BasePipeline):
 
             assert len(Rs) == len(Ts) == len(tracks)
 
-            if self.config.bundle_adjustment.use_with_rolling_window:
+            if (
+                self.config.bundle_adjustment.use_with_rolling_window
+                and counter % self.config.bundle_adjustment.rolling_window.period == 0
+            ) or (self.config.bundle_adjustment.use_with_first_pair and len(Rs) == 2):
                 # perform intermediate BA step
-                if counter % self.config.bundle_adjustment.rolling_window.period == 0:
-                    bawl = self.config.bundle_adjustment.rolling_window.length
-                    (
-                        cloud_slice[:],
-                        Rs[-bawl:],
-                        Ts[-bawl:],
-                    ) = self.bundle_adjuster.run(
-                        cloud_slice,
-                        Rs[-bawl:],
-                        Ts[-bawl:],
-                        tracks[-bawl:],
-                        track_index_masks[-bawl:],
-                    )
-                # cloud_slice[:] = optimized_cloud_slice
+                bawl = self.config.bundle_adjustment.rolling_window.length
+                (cloud_slice[:], Rs[-bawl:], Ts[-bawl:],) = self.bundle_adjuster.run(
+                    cloud_slice,
+                    Rs[-bawl:],
+                    Ts[-bawl:],
+                    tracks[-bawl:],
+                    track_index_masks[-bawl:],
+                )
 
         if self.config.bundle_adjustment.use_at_end:
             # perform final BA step
