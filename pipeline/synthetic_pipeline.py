@@ -54,7 +54,7 @@ class SyntheticPipeline(VideoPipeline):
             slice_mask = (track_slice > 0).all(axis=1)
             track_slice[~slice_mask] = np.array([None, None])
 
-            yield track_slice, slice_mask, is_new_feature_set
+            yield track_slice, is_new_feature_set
 
             is_new_feature_set = False
             frame_counter += 1

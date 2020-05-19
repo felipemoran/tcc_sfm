@@ -12,6 +12,7 @@ Version: 1.0.0
 import numpy as np
 from scipy.optimize import least_squares
 from scipy.sparse import lil_matrix
+from config import BundleAdjustmentConfig
 import cv2
 from pipeline import utils
 
@@ -22,7 +23,15 @@ class BundleAdjuster:
     Performs end-to-end bundle adjusment to Structure from Motion problems.
     """
 
-    def __init__(self, camera_matrix, tol=1e-4, method="trf", verbose=0):
+    def __init__(
+        self,
+        config: BundleAdjustmentConfig,
+        camera_matrix,
+        tol=1e-4,
+        method="trf",
+        verbose=0,
+    ):
+        self.config = config
 
         # Basic optimization attributes
         self.tol = tol
@@ -34,14 +43,39 @@ class BundleAdjuster:
         self.optimized_points = None
         self.optimized_cameras = None
 
-    def run(self, point_cloud, Rs, Ts, tracks, track_masks):
+    def run(self, point_cloud, Rs, Ts, tracks, track_masks, final_frame=False):
+        run_ba = False
+        ba_window_start = 0
+
+        if self.config.use_with_first_pair and len(Rs) == 2:
+            run_ba = True
+
+        if (
+            self.config.use_with_rolling_window
+            and len(Rs) % self.config.rolling_window.period == 0
+        ):
+            run_ba = True
+            ba_window_start = -self.config.rolling_window.length
+
+        if self.config.use_at_end and final_frame:
+            run_ba = True
+
+        if not run_ba:
+            return point_cloud, Rs, Ts
+
         (
             camera_params,
             points_3d,
             points_2d,
             camera_indexes,
             point_indexes,
-        ) = self._prepare_optimization_input(point_cloud, Rs, Ts, tracks, track_masks)
+        ) = self._prepare_optimization_input(
+            point_cloud,
+            Rs[ba_window_start:],
+            Ts[ba_window_start:],
+            tracks[ba_window_start:],
+            track_masks[ba_window_start:],
+        )
 
         # Optimize
         optimized_cameras, optimized_points = self.optimize(
@@ -51,7 +85,11 @@ class BundleAdjuster:
             camera_indices=camera_indexes,
             point_indices=point_indexes,
         )
-        point_cloud, Rs, Ts = self._parse_optimization_result(
+        (
+            point_cloud[:],
+            Rs[ba_window_start:],
+            Ts[ba_window_start:],
+        ) = self._parse_optimization_result(
             point_cloud=point_cloud,
             optimized_cameras=optimized_cameras,
             optimized_points=optimized_points,

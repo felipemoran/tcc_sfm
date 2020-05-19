@@ -21,10 +21,12 @@ class VideoPipeline(BasePipeline):
         self.display_klt_debug_frames = display_klt_debug_frames
         self.config = config
 
-        self.image_size = None
         self.config.camera_matrix = np.array(self.config.camera_matrix)
-
-        self.bundle_adjuster = BundleAdjuster(self.config.camera_matrix, verbose=2)
+        self.bundle_adjuster = BundleAdjuster(
+            config=self.config.bundle_adjustment,
+            camera_matrix=self.config.camera_matrix,
+            verbose=2,
+        )
 
     def run(self):
         # Start by finding the images
@@ -40,20 +42,14 @@ class VideoPipeline(BasePipeline):
         cloud_slice = None
 
         # Loop through frames (using generators)
-        counter = 0
-        for (
-            next_track_slice,
-            next_track_slice_mask,
-            is_new_feature_set,
-        ) in self._process_next_frame(file):
-            tracks += [next_track_slice]
-
-            counter += 1
-            track_index_masks += [next_track_slice_mask]
+        for frame_index, (track_slice, is_new_feature_set) in enumerate(
+            self._process_next_frame(file)
+        ):
+            tracks += [track_slice]
+            track_index_masks += [~utils.get_nan_mask(track_slice)]
 
             if is_new_feature_set:
-                # track_index_masks += [next_track_slice_mask]
-                cloud_slice = cloud[: len(next_track_slice)]
+                cloud_slice = cloud[: len(track_slice)]
                 assert len(tracks) == 1, "Resetting KLT features is not yet implemented"
                 continue
 
@@ -96,25 +92,13 @@ class VideoPipeline(BasePipeline):
 
             assert len(Rs) == len(Ts) == len(tracks)
 
-            if (
-                self.config.bundle_adjustment.use_with_rolling_window
-                and counter % self.config.bundle_adjustment.rolling_window.period == 0
-            ) or (self.config.bundle_adjustment.use_with_first_pair and len(Rs) == 2):
-                # perform intermediate BA step
-                bawl = self.config.bundle_adjustment.rolling_window.length
-                (cloud_slice[:], Rs[-bawl:], Ts[-bawl:],) = self.bundle_adjuster.run(
-                    cloud_slice,
-                    Rs[-bawl:],
-                    Ts[-bawl:],
-                    tracks[-bawl:],
-                    track_index_masks[-bawl:],
-                )
-
-        if self.config.bundle_adjustment.use_at_end:
-            # perform final BA step
-            cloud, Rs, Ts = self.bundle_adjuster.run(
-                cloud_slice, Rs, Ts, tracks, track_index_masks
+            cloud_slice[:], Rs, Ts = self.bundle_adjuster.run(
+                cloud_slice, Rs, Ts, tracks, track_index_masks,
             )
+
+        cloud_slice[:], Rs, Ts = self.bundle_adjuster.run(
+            cloud_slice, Rs, Ts, tracks, track_index_masks, final_frame=True
+        )
 
         # when all frames are processed, plot result
         utils.write_to_viz_file(self.config.camera_matrix, Rs, Ts, cloud)

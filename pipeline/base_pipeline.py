@@ -29,8 +29,6 @@ class BasePipeline:
         reset_features = True
         next_frame = None
 
-        mask = None
-
         # this counter is actually for processed frames and not for raw frames
         frame_counter = 0
 
@@ -123,9 +121,8 @@ class BasePipeline:
                 status=status
                 # mimics the same format as status from cv2.calcOpticalFlowPyrLK()
             )
-            slice_mask = utils.create_bool_mask(len(track_slice), track_indexes)
 
-            yield track_slice, slice_mask, is_new_feature_set
+            yield track_slice, is_new_feature_set
 
             prev_frame = next_frame.copy()  # do I really need this .copy() ?
             prev_features = next_features
