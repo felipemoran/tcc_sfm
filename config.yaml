@@ -43,11 +43,11 @@ recover_pose_algorithm:
     distance_threshold: 50
 
 solvepnp:
-    min_number_of_points: 4
+    min_number_of_points: 10
 
 bundle_adjustment:
-    use_with_first_pair: true
-    use_with_rolling_window: true
+    use_with_first_pair: false
+    use_with_rolling_window: false
     use_at_end: true
     rolling_window:
         period: 10

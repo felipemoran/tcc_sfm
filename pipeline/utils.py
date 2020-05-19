@@ -17,11 +17,15 @@ def write_to_viz_file(camera_matrix, Rs, Ts, points):
             out_file.write(",".join(line))
             out_file.write("\n")
 
-        line_elements = [TYPE_CALIBRATION_MATRIX, 0] + list(camera_matrix.flatten())
+        line_elements = [TYPE_CALIBRATION_MATRIX, 0] + list(
+            camera_matrix.flatten()
+        )
         convert_and_save_line(line_elements)
 
         for index, (R, t) in enumerate(zip(Rs, Ts)):
-            line_elements = [TYPE_CAMERA, index] + list(R.flatten()) + list(t.flatten())
+            line_elements = (
+                [TYPE_CAMERA, index] + list(R.flatten()) + list(t.flatten())
+            )
             convert_and_save_line(line_elements)
 
         for point_id, point in enumerate(points):
@@ -37,7 +41,9 @@ def write_to_viz_file(camera_matrix, Rs, Ts, points):
 
 def call_viz():
     os.system(
-        os.path.join(os.getcwd(), "visualizer", "cmake-build-debug", "visualizer")
+        os.path.join(
+            os.getcwd(), "visualizer", "cmake-build-debug", "visualizer"
+        )
         + " "
         + os.path.join(os.getcwd(), "out", "viz_data.csv")
     )
@@ -47,7 +53,9 @@ def progress_bar(realized, total, length=20):
     assert 0 <= realized <= total
 
     rep = int(round(length * realized / total))
-    return "{:2} / {:2}  {:2}".format(realized, total, "#" * rep + "_" * (length - rep))
+    return "{:2} / {:2}  {:2}".format(
+        realized, total, "#" * rep + "_" * (length - rep)
+    )
 
 
 def compose_RTs(rel_R, rel_T, comp_R, comp_T):
@@ -65,4 +73,6 @@ def get_nan_mask(input_array):
 
 
 def invert_reference_frame(R, T):
+    if R is None:
+        return T, R
     return R.transpose(), np.matmul(R.transpose(), -T)

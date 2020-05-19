@@ -42,7 +42,9 @@ class BasePipeline:
                     # if yes, get the first frame
                     ret, next_frame_color = file.read()
                     assert ret, "File has no frames!"
-                    next_frame = cv2.cvtColor(next_frame_color, cv2.COLOR_BGR2GRAY)
+                    next_frame = cv2.cvtColor(
+                        next_frame_color, cv2.COLOR_BGR2GRAY
+                    )
 
                 # generate new feature set
                 next_features = cv2.goodFeaturesToTrack(
@@ -114,7 +116,11 @@ class BasePipeline:
                     )
 
             # generate track slice
-            track_indexes, next_features, track_slice = self._features_to_track_slice(
+            (
+                track_indexes,
+                next_features,
+                track_slice,
+            ) = self._features_to_track_slice(
                 num_features=num_features,
                 track_indexes=track_indexes,
                 frame_features=next_features,
@@ -130,7 +136,12 @@ class BasePipeline:
             is_new_feature_set = False
 
     def _display_klt_debug_frame(
-        self, next_frame_color, status, next_features, prev_features, track_indexes
+        self,
+        next_frame_color,
+        status,
+        next_features,
+        prev_features,
+        track_indexes,
     ):
         # if mask is None:
         #     mask = np.zeros_like(next_frame_color)
@@ -163,7 +174,9 @@ class BasePipeline:
         time.sleep(0.2)
 
     @staticmethod
-    def _features_to_track_slice(num_features, track_indexes, frame_features, status):
+    def _features_to_track_slice(
+        num_features, track_indexes, frame_features, status
+    ):
         status = status.squeeze().astype(np.bool)
 
         # remove from track_indexes those indexes that are not valid anymore according to frame_features_status
@@ -226,7 +239,8 @@ class BasePipeline:
         track_mask = ~np.isnan(tracks).any(axis=(0, 2))
 
         assert (
-            track_mask.sum() > self.config.five_point_algorithm.min_number_of_points
+            track_mask.sum()
+            > self.config.five_point_algorithm.min_number_of_points
         ), "Not enough points to run 5-point algorithm. Aborting"
 
         # Since findEssentialMat can't receive masks, we gotta "wrap" the inputs with one
@@ -245,7 +259,9 @@ class BasePipeline:
 
         print(
             "P: {}".format(
-                utils.progress_bar(sum(five_pt_mask.squeeze()), five_pt_mask.shape[0])
+                utils.progress_bar(
+                    sum(five_pt_mask.squeeze()), five_pt_mask.shape[0]
+                )
             ),
             end="   ",
         )
@@ -284,7 +300,9 @@ class BasePipeline:
     def _reproject_tracks_to_3d(self, R_1, T_1, R_2, T_2, tracks):
         assert (
             tracks.shape[0] == 2
-        ), "Can't do reprojection with {} cameras, 2 are needed".format(tracks.shape[0])
+        ), "Can't do reprojection with {} cameras, 2 are needed".format(
+            tracks.shape[0]
+        )
 
         P1 = np.matmul(self.config.camera_matrix, np.hstack((R_1, T_1)))
         P2 = np.matmul(self.config.camera_matrix, np.hstack((R_2, T_2)))
@@ -295,7 +313,9 @@ class BasePipeline:
             projPoints1=tracks[0].transpose(),
             projPoints2=tracks[1].transpose(),
         )
-        points_3d = cv2.convertPointsFromHomogeneous(points_4d.transpose()).squeeze()
+        points_3d = cv2.convertPointsFromHomogeneous(
+            points_4d.transpose()
+        ).squeeze()
         track_pair_mask = ~utils.get_nan_mask(points_3d)
 
         return points_3d

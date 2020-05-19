@@ -97,7 +97,9 @@ class BundleAdjuster:
 
         return point_cloud, Rs, Ts
 
-    def _prepare_optimization_input(self, point_cloud, Rs, Ts, tracks, track_masks):
+    def _prepare_optimization_input(
+        self, point_cloud, Rs, Ts, tracks, track_masks
+    ):
         assert len(Rs) == len(Ts) == len(tracks) == len(track_masks)
 
         camera_params = []
@@ -116,10 +118,14 @@ class BundleAdjuster:
         for index, (track, track_mask) in enumerate(zip(tracks, track_masks)):
             mask = track_mask & cloud_not_nan_mask
 
-            camera_indexes = np.append(camera_indexes, np.full(mask.sum(), index))
+            camera_indexes = np.append(
+                camera_indexes, np.full(mask.sum(), index)
+            )
             point_indexes = np.append(
                 point_indexes,
-                np.arange(cloud_not_nan_mask.sum())[track_mask[cloud_not_nan_mask]],
+                np.arange(cloud_not_nan_mask.sum())[
+                    track_mask[cloud_not_nan_mask]
+                ],
             )
             points_2d = np.vstack((points_2d, track[mask]))
 
@@ -127,7 +133,13 @@ class BundleAdjuster:
 
         points_3d = point_cloud[cloud_not_nan_mask]
 
-        return camera_params, points_3d, points_2d, camera_indexes, point_indexes
+        return (
+            camera_params,
+            points_3d,
+            points_2d,
+            camera_indexes,
+            point_indexes,
+        )
 
     def _parse_optimization_result(
         self, point_cloud, optimized_cameras, optimized_points
@@ -195,7 +207,13 @@ class BundleAdjuster:
         return points_proj
 
     def _objective_function(
-        self, params, n_cameras, n_points, camera_indices, point_indices, points_2d
+        self,
+        params,
+        n_cameras,
+        n_points,
+        camera_indices,
+        point_indices,
+        points_2d,
     ):
         """Compute residuals.
 
@@ -292,12 +310,19 @@ class BundleAdjuster:
             x_scale="jac",
             ftol=self.tol,
             method=self.method,
-            args=(n_cameras, n_points, camera_indices, point_indices, points_2d),
+            args=(
+                n_cameras,
+                n_points,
+                camera_indices,
+                point_indices,
+                points_2d,
+            ),
         )
 
         # Return optimized params
-        self.optimized_cameras, self.optimized_points = self._get_optimized_params(
-            optim_res.x, n_cameras, n_points
-        )
+        (
+            self.optimized_cameras,
+            self.optimized_points,
+        ) = self._get_optimized_params(optim_res.x, n_cameras, n_points)
 
         return self.optimized_cameras, self.optimized_points

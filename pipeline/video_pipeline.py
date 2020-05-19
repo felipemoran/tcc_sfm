@@ -37,7 +37,9 @@ class VideoPipeline(BasePipeline):
         tracks = []
         track_index_masks = []
         cloud = np.full(
-            (self.config.klt.corner_selection.max_corners, 3), None, dtype=np.float_
+            (self.config.klt.corner_selection.max_corners, 3),
+            None,
+            dtype=np.float_,
         )
         cloud_slice = None
 
@@ -50,7 +52,9 @@ class VideoPipeline(BasePipeline):
 
             if is_new_feature_set:
                 cloud_slice = cloud[: len(track_slice)]
-                assert len(tracks) == 1, "Resetting KLT features is not yet implemented"
+                assert (
+                    len(tracks) == 1
+                ), "Resetting KLT features is not yet implemented"
                 continue
 
             track_pair = np.array(tracks[-2:])
@@ -58,29 +62,10 @@ class VideoPipeline(BasePipeline):
             R, T, new_points = self._calculate_pose(
                 track_pair, Rs[-1], Ts[-1], cloud_slice
             )
-            if self.config.use_reconstruct_tracks:
-                # recalculate points based on refined R and T
-                new_points = self._reproject_tracks_to_3d(
-                    R_1=Rs[-1].transpose(),
-                    T_1=np.matmul(Rs[-1].transpose(), -Ts[-1]),
-                    R_2=R.transpose(),
-                    T_2=np.matmul(R.transpose(), -T),
-                    tracks=track_pair,
-                )
 
             if R is None:
                 # Last track slice wasn't good (not enough points) so let's drop it
                 tracks = tracks[:-1]
-                continue
-
-            # if cloud is empty and there are not enough new points, try next frame
-            n_points_in_point_cloud = (~utils.get_nan_mask(cloud_slice)).sum()
-            if (
-                n_points_in_point_cloud == 0
-                and len(new_points) < self.config.min_number_of_points_in_cloud
-            ):
-                # don't forget to reset track vector and drop old unused data
-                tracks = [tracks[-1]]
                 continue
 
             # merge new points with existing point cloud
@@ -110,7 +95,7 @@ class VideoPipeline(BasePipeline):
         track_pair_mask = ~utils.get_nan_mask(np.hstack(track_pair))
 
         R, T = None, None
-        points_3d = np.empty((0, 3), dtype=np.float_)
+        points = np.empty((0, 3), dtype=np.float_)
 
         if self.config.use_five_pt_algorithm or n_points_in_point_cloud == 0:
             if (
@@ -119,10 +104,12 @@ class VideoPipeline(BasePipeline):
             ):
                 return None, None, None
 
-            R, T, points_3d = self._run_five_pt_algorithm(track_pair)
+            R, T, points = self._run_five_pt_algorithm(track_pair)
 
             # first convert R and T from camera i to 0's perspective
-            points_3d = utils.translate_points_to_base_frame(prev_R, prev_T, points_3d)
+            points = utils.translate_points_to_base_frame(
+                prev_R, prev_T, points
+            )
 
             R, T = utils.compose_RTs(R, T, prev_R, prev_T)
 
@@ -130,26 +117,32 @@ class VideoPipeline(BasePipeline):
         track_slice_mask = ~utils.get_nan_mask(track_pair[1])
         proj_mask = track_slice_mask & point_cloud_mask
 
-        # Not enough points for reconstruction of pose
         if (
-            not self.config.use_solve_pnp
-            or proj_mask.sum() < self.config.solvepnp.min_number_of_points
+            self.config.use_solve_pnp
+            and proj_mask.sum() >= self.config.solvepnp.min_number_of_points
         ):
-            return R, T, points_3d
 
-        if R is not None:
             R, T = utils.invert_reference_frame(R, T)
 
-        # refine R and T based on previous point cloud
-        R, T = self._run_solvepnp(
-            track_slice=track_pair[1][proj_mask],
-            points_3d=point_cloud[proj_mask],
-            R=R,
-            T=T,
-        )
-        # Result is in camera 0's coordinate system
+            # refine R and T based on previous point cloud
+            R, T = self._run_solvepnp(
+                track_slice=track_pair[1][proj_mask],
+                points_3d=point_cloud[proj_mask],
+                R=R,
+                T=T,
+            )
+            # Result is in camera 0's coordinate system
 
-        return R, T, points_3d
+        if self.config.use_reconstruct_tracks and R is not None:
+            points = self._reproject_tracks_to_3d(
+                R_1=prev_R.transpose(),
+                T_1=np.matmul(prev_R.transpose(), -prev_T),
+                R_2=R.transpose(),
+                T_2=np.matmul(R.transpose(), -T),
+                tracks=track_pair,
+            )
+
+        return R, T, points
 
     def _merge_points_into_cloud(self, point_cloud, new_points):
         # check which points still have no data
@@ -175,7 +168,9 @@ if __name__ == "__main__":
     config = dacite.from_dict(data=config_raw, data_class=VideoPipelineConfig)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("dir", help="Directory with image files for reconstructions")
+    parser.add_argument(
+        "dir", help="Directory with image files for reconstructions"
+    )
     parser.add_argument(
         "-sd",
         "--display_klt_debug_frames",
