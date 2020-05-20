@@ -58,7 +58,7 @@ def progress_bar(realized, total, length=20):
     )
 
 
-def compose_RTs(rel_R, rel_T, comp_R, comp_T):
+def compose_rts(rel_R, rel_T, comp_R, comp_T):
     res_T = comp_T + np.matmul(comp_R, rel_T)
     res_R = np.matmul(comp_R, rel_R)
     return res_R, res_T
@@ -76,3 +76,7 @@ def invert_reference_frame(R, T):
     if R is None:
         return T, R
     return R.transpose(), np.matmul(R.transpose(), -T)
+
+
+def init_rt():
+    return np.eye(3), np.zeros((3, 1), dtype=np.float_)

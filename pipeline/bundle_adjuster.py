@@ -43,39 +43,14 @@ class BundleAdjuster:
         self.optimized_points = None
         self.optimized_cameras = None
 
-    def run(self, point_cloud, Rs, Ts, tracks, track_masks, final_frame=False):
-        run_ba = False
-        ba_window_start = 0
-
-        if self.config.use_with_first_pair and len(Rs) == 2:
-            run_ba = True
-
-        if (
-            self.config.use_with_rolling_window
-            and len(Rs) % self.config.rolling_window.period == 0
-        ):
-            run_ba = True
-            ba_window_start = -self.config.rolling_window.length
-
-        if self.config.use_at_end and final_frame:
-            run_ba = True
-
-        if not run_ba:
-            return point_cloud, Rs, Ts
-
+    def run(self, Rs, Ts, cloud, tracks):
         (
             camera_params,
             points_3d,
             points_2d,
             camera_indexes,
             point_indexes,
-        ) = self._prepare_optimization_input(
-            point_cloud,
-            Rs[ba_window_start:],
-            Ts[ba_window_start:],
-            tracks[ba_window_start:],
-            track_masks[ba_window_start:],
-        )
+        ) = self._prepare_optimization_input(cloud, Rs, Ts, tracks)
 
         # Optimize
         optimized_cameras, optimized_points = self.optimize(
@@ -85,22 +60,16 @@ class BundleAdjuster:
             camera_indices=camera_indexes,
             point_indices=point_indexes,
         )
-        (
-            point_cloud[:],
-            Rs[ba_window_start:],
-            Ts[ba_window_start:],
-        ) = self._parse_optimization_result(
-            point_cloud=point_cloud,
+        (cloud, Rs, Ts,) = self._parse_optimization_result(
+            point_cloud=cloud,
             optimized_cameras=optimized_cameras,
             optimized_points=optimized_points,
         )
 
-        return point_cloud, Rs, Ts
+        return Rs, Ts, cloud
 
-    def _prepare_optimization_input(
-        self, point_cloud, Rs, Ts, tracks, track_masks
-    ):
-        assert len(Rs) == len(Ts) == len(tracks) == len(track_masks)
+    def _prepare_optimization_input(self, point_cloud, Rs, Ts, tracks):
+        assert len(Rs) == len(Ts) == len(tracks)
 
         camera_params = []
         points_2d = np.empty((0, 2), dtype=np.float_)
@@ -115,7 +84,8 @@ class BundleAdjuster:
 
         cloud_not_nan_mask = ~utils.get_nan_mask(point_cloud)
 
-        for index, (track, track_mask) in enumerate(zip(tracks, track_masks)):
+        for index, track in enumerate(tracks):
+            track_mask = ~utils.get_nan_mask(track)
             mask = track_mask & cloud_not_nan_mask
 
             camera_indexes = np.append(

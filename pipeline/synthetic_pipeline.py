@@ -21,14 +21,14 @@ class SyntheticPipeline(VideoPipeline):
         config.camera_matrix = np.array(
             [[500, 0.0, 500], [0.0, 500, 500], [0.0, 0.0, 1.0]], dtype=np.float_
         )
-        super().__init__(None, config)
+        super().__init__(config)
 
         self.synthetic_case = 2
 
     def _get_video(self, file_path):
         return None, None
 
-    def _process_next_frame(self, file):
+    def _file_to_tracks(self, file):
         # Replaces the original function to generate synthetic data while maintaining everything else
 
         points_3d = self._get_synthetic_points()
@@ -38,7 +38,6 @@ class SyntheticPipeline(VideoPipeline):
 
         # mimic otiginal function variables
         is_new_feature_set = True
-        feature_pack_id = 0
         frame_counter = 0
 
         for index, (R, T) in enumerate(zip(Rs, Ts)):
@@ -116,4 +115,4 @@ if __name__ == "__main__":
     config = dacite.from_dict(data=config_raw, data_class=VideoPipelineConfig)
 
     sp = SyntheticPipeline(config)
-    sp.run()
+    sp.run(None)

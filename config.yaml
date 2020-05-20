@@ -10,10 +10,8 @@ use_five_pt_algorithm: true
 use_solve_pnp: true
 use_reconstruct_tracks: true
 
-min_number_of_points_in_cloud: 10
-
 klt:
-    frames_to_skip: 1
+    frames_to_skip: 2
     reset_period: 1000
 
     corner_selection:
@@ -34,6 +32,12 @@ klt:
             max_iter: 10
             eps: 0.003
 
+init:
+    method: five_pt_algorithm
+    error_threshold: 0.2
+    five_point:
+        first_frame_fixed: false
+
 five_point_algorithm:
     min_number_of_points: 6
     threshold: 3
@@ -46,10 +50,10 @@ solvepnp:
     min_number_of_points: 10
 
 bundle_adjustment:
-    use_with_first_pair: false
-    use_with_rolling_window: false
+    use_with_first_pair: true
+    use_with_rolling_window: true
     use_at_end: true
     rolling_window:
         period: 10
-        length: 20
+        length: 15
     verbosity: 2

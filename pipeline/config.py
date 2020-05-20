@@ -43,7 +43,20 @@ class KLTConfig:
 
 
 @dataclass
-class FivePointAlgorithm:
+class FivePointInitConfig:
+    first_frame_fixed: bool
+
+
+@dataclass
+class InitConfig:
+    method: str
+    error_threshold: float
+
+    five_point: FivePointInitConfig
+
+
+@dataclass
+class FivePointAlgorithmConfig:
     min_number_of_points: int
     threshold: float
     probability: float
@@ -82,11 +95,11 @@ class VideoPipelineConfig:
     use_solve_pnp: bool
     use_reconstruct_tracks: bool
 
-    min_number_of_points_in_cloud: int
-
     klt: KLTConfig
 
-    five_point_algorithm: FivePointAlgorithm
+    init: InitConfig
+
+    five_point_algorithm: FivePointAlgorithmConfig
     recover_pose_algorithm: RecoverPoseConfig
     solvepnp: SolvePnPConfig
 

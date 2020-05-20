@@ -11,7 +11,7 @@ debug_colors = np.random.randint(0, 255, (200, 3))
 
 
 class BasePipeline:
-    def run(self):
+    def run(self, dir):
         assert False, "This method needs to be implemented"
 
     @staticmethod
@@ -25,7 +25,7 @@ class BasePipeline:
 
         return file, filename
 
-    def _process_next_frame(self, file):
+    def _file_to_tracks(self, file):
         reset_features = True
         next_frame = None
 
@@ -202,7 +202,9 @@ class BasePipeline:
 
         return track_indexes, frame_features, track_slice
 
-    def _run_solvepnp(self, track_slice, points_3d, R=None, T=None):
+    def _run_solvepnp(self, track_slice, cloud, R=None, T=None):
+        config = self.config.solvepnp
+
         if R is not None and T is not None:
             use_extrinsic_gress = True
         else:
@@ -212,14 +214,23 @@ class BasePipeline:
             (R is None) ^ (T is None)
         ), "Either both R and T are None or none of the two"
 
-        r_vec = None if R is None else cv2.Rodrigues(R)[0]
+        # create new mask based on existing point cloud's and newly created track's
+        track_slice_mask = ~utils.get_nan_mask(track_slice)
+        cloud_mask = ~utils.get_nan_mask(cloud)
+        proj_mask = track_slice_mask & cloud_mask
 
-        retval, R, T = cv2.solvePnP(
-            objectPoints=points_3d,
-            imagePoints=track_slice,
+        if proj_mask.sum() < config.min_number_of_points:
+            return R, T
+
+        # go back to camera's reference frame
+        R, T = utils.invert_reference_frame(R, T)
+
+        return_value, R, T = cv2.solvePnP(
+            objectPoints=cloud[proj_mask],
+            imagePoints=track_slice[proj_mask],
             cameraMatrix=self.config.camera_matrix,
             distCoeffs=None,
-            rvec=r_vec,
+            rvec=None if R is None else cv2.Rodrigues(R)[0],
             tvec=T,
             useExtrinsicGuess=use_extrinsic_gress,
             flags=cv2.SOLVEPNP_ITERATIVE,
@@ -233,15 +244,15 @@ class BasePipeline:
 
         return R, T
 
-    def _run_five_pt_algorithm(self, tracks):
+    def _run_five_pt_algorithm(self, tracks, prev_R, prev_T):
+        five_pt_config = self.config.five_point_algorithm
+        recover_pose_config = self.config.recover_pose_algorithm
+
         # Remove all points that don't have correspondence between frames
-        num_points = tracks.shape[1]
         track_mask = ~np.isnan(tracks).any(axis=(0, 2))
 
-        assert (
-            track_mask.sum()
-            > self.config.five_point_algorithm.min_number_of_points
-        ), "Not enough points to run 5-point algorithm. Aborting"
+        if track_mask.sum() < five_pt_config.min_number_of_points:
+            return None, None, None
 
         # Since findEssentialMat can't receive masks, we gotta "wrap" the inputs with one
         trimmed_tracks = tracks[:, track_mask]
@@ -252,52 +263,53 @@ class BasePipeline:
             points2=trimmed_tracks[1],
             cameraMatrix=self.config.camera_matrix,
             method=cv2.RANSAC,
-            prob=self.config.five_point_algorithm.probability,
-            threshold=self.config.five_point_algorithm.threshold,
+            prob=five_pt_config.probability,
+            threshold=five_pt_config.threshold,
             # mask=track_mask,
         )
 
-        print(
-            "P: {}".format(
-                utils.progress_bar(
-                    sum(five_pt_mask.squeeze()), five_pt_mask.shape[0]
-                )
-            ),
-            end="   ",
-        )
+        # print(
+        #     f"E: {sum(five_pt_mask.squeeze()):3}/{five_pt_mask.shape[0]:3}",
+        #     end="\t",
+        # )
+
         _, R, T, pose_mask, points_4d = cv2.recoverPose(
             E=E,
             points1=trimmed_tracks[0],
             points2=trimmed_tracks[1],
             cameraMatrix=self.config.camera_matrix,
-            distanceThresh=self.config.recover_pose_algorithm.distance_threshold,
+            distanceThresh=recover_pose_config.distance_threshold,
             mask=five_pt_mask.copy(),
         )
 
-        print(
-            "P: {}".format(
-                utils.progress_bar(sum(pose_mask.squeeze()), pose_mask.shape[0])
-            )
-        )
+        # print(f"P: {sum(pose_mask.squeeze()):3}/{pose_mask.shape[0]:3}")
 
         # filter out 3d_points and point_indexes according to mask
         final_mask = pose_mask.squeeze().astype(np.bool)
-        point_indexes = np.arange(num_points)[track_mask][final_mask]
 
-        good_points_3d = cv2.convertPointsFromHomogeneous(
+        selected_points_3d = cv2.convertPointsFromHomogeneous(
             points_4d.transpose()
         ).squeeze()
 
         points_3d = np.full((tracks.shape[1], 3), None, dtype=np.float_)
-        good_points_3d[~final_mask] = np.array([None, None, None])
-        points_3d[track_mask] = good_points_3d
+        selected_points_3d[~final_mask] = np.array([None, None, None])
+        points_3d[track_mask] = selected_points_3d
 
         # Convert it back to first camera base system
         R, T = utils.invert_reference_frame(R, T)
 
+        # Then convert it all to camera 0's reference system
+        points_3d = utils.translate_points_to_base_frame(
+            prev_R, prev_T, points_3d
+        )
+        R, T = utils.compose_rts(R, T, prev_R, prev_T)
+
         return R, T, points_3d
 
     def _reproject_tracks_to_3d(self, R_1, T_1, R_2, T_2, tracks):
+        if any([R_1 is None, T_1 is None, R_2 is None, T_2 is None,]):
+            return None
+
         assert (
             tracks.shape[0] == 2
         ), "Can't do reprojection with {} cameras, 2 are needed".format(
@@ -316,6 +328,5 @@ class BasePipeline:
         points_3d = cv2.convertPointsFromHomogeneous(
             points_4d.transpose()
         ).squeeze()
-        track_pair_mask = ~utils.get_nan_mask(points_3d)
 
         return points_3d
