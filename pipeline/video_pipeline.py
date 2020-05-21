@@ -4,6 +4,7 @@ import time
 import dacite
 import cv2
 
+from operator import itemgetter
 from ruamel.yaml import YAML
 from pipeline import utils
 from pipeline.base_pipeline import BasePipeline
@@ -184,35 +185,53 @@ class VideoPipeline(BasePipeline):
 
     def _run_ba(self, Rs, Ts, cloud, tracks, final_frame=False):
         config = self.config.bundle_adjustment
-        run_ba = False
-        ba_window_start = 0
 
-        if config.use_with_first_pair and len(Rs) == 2:
-            run_ba = True
+        if (config.use_with_first_pair and len(Rs) == 2) or (
+            config.use_at_end and final_frame
+        ):
+            Rs, Ts, cloud = self.bundle_adjuster.run(Rs, Ts, cloud, tracks,)
 
-        if (
+        elif (
             config.use_with_rolling_window
             and len(Rs) % config.rolling_window.period == 0
         ):
-            run_ba = True
-            ba_window_start = -config.rolling_window.length
+            method = config.rolling_window.method
+            length = config.rolling_window.length
+            step = config.rolling_window.step
 
-        if config.use_at_end and final_frame:
-            run_ba = True
+            if method == "constant_step":
+                ba_window_step = step
+                ba_window_start = -(length - 1) * step - 1
 
-        if not run_ba:
-            return Rs, Ts, cloud
+                (
+                    Rs[ba_window_start::ba_window_step],
+                    Ts[ba_window_start::ba_window_step],
+                    cloud,
+                ) = self.bundle_adjuster.run(
+                    Rs[ba_window_start::ba_window_step],
+                    Ts[ba_window_start::ba_window_step],
+                    cloud,
+                    tracks[ba_window_start::ba_window_step],
+                )
+            elif method == "growing_step":
+                indexes = [
+                    item
+                    for item in [
+                        -int(i * (i + 1) / 2 + 1) for i in range(20, -1, -1)
+                    ]
+                    if -item <= len(Rs)
+                ]
 
-        (
-            Rs[ba_window_start:],
-            Ts[ba_window_start:],
-            cloud,
-        ) = self.bundle_adjuster.run(
-            Rs[ba_window_start:],
-            Ts[ba_window_start:],
-            cloud,
-            tracks[ba_window_start:],
-        )
+                R_opt, T_opt, cloud = self.bundle_adjuster.run(
+                    itemgetter(*indexes)(Rs),
+                    itemgetter(*indexes)(Ts),
+                    cloud,
+                    itemgetter(*indexes)(tracks),
+                )
+
+                for index, R, T in zip(indexes, R_opt, T_opt):
+                    Rs[index] = R
+                    Ts[index] = T
 
         return Rs, Ts, cloud
 

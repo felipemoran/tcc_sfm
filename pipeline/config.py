@@ -74,8 +74,10 @@ class SolvePnPConfig:
 
 @dataclass
 class RollingWindowConfig:
+    method: str
     period: int
     length: int
+    step: int
 
 
 @dataclass
