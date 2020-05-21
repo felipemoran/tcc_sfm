@@ -146,7 +146,7 @@ class VideoPipeline(BasePipeline):
 
         # for the others, do the average (results in exponential smoothing)
         cloud[replace_mask] = points[replace_mask]
-        cloud[average_mask] = (cloud[average_mask] + points[average_mask]) / 2
+        # cloud[average_mask] = (cloud[average_mask] + points[average_mask]) / 2
 
         return cloud
 

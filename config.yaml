@@ -11,7 +11,7 @@ use_solve_pnp: true
 use_reconstruct_tracks: true
 
 klt:
-    frames_to_skip: 2
+    frames_to_skip: 1
     reset_period: 1000
 
     corner_selection:
@@ -24,7 +24,7 @@ klt:
         window_size:
             width: 15
             height: 15
-        max_level: 2
+        max_level: 3
         criteria:
             # original: (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
             # where cv2.TERM_CRITERIA_EPS = 2 and cv2.TERM_CRITERIA_COUNT = 1
@@ -41,7 +41,7 @@ init:
 five_point_algorithm:
     min_number_of_points: 6
     threshold: 3
-    probability: 0.99
+    probability: 0.999
 
 recover_pose_algorithm:
     distance_threshold: 50
@@ -51,9 +51,9 @@ solvepnp:
 
 bundle_adjustment:
     use_with_first_pair: true
-    use_with_rolling_window: true
+    use_with_rolling_window: false
     use_at_end: true
     rolling_window:
-        period: 10
-        length: 15
+        period: 5
+        length: 7
     verbosity: 2
