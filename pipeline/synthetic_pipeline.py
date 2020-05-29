@@ -18,9 +18,6 @@ TYPE_POINT = 2
 
 class SyntheticPipeline(VideoPipeline):
     def __init__(self, config):
-        config.camera_matrix = np.array(
-            [[500, 0.0, 500], [0.0, 500, 500], [0.0, 0.0, 1.0]], dtype=np.float_
-        )
         super().__init__(config)
 
         self.synthetic_case = 2
@@ -29,12 +26,14 @@ class SyntheticPipeline(VideoPipeline):
         return None, None
 
     def _file_to_tracks(self, file):
-        # Replaces the original function to generate synthetic data while maintaining everything else
+        """Replaces the original function to generate synthetic data while maintaining everything else"""
+
+        num_cameras = 2
 
         points_3d = self._get_synthetic_points()
 
-        Rs = self._get_synthetic_camera_rotations()
-        Ts = self._get_synthetic_camera_translations()
+        Rs = self._get_synthetic_camera_rotations()[:num_cameras]
+        Ts = self._get_synthetic_camera_translations()[:num_cameras]
 
         for index, (R, T) in enumerate(zip(Rs, Ts)):
             # convert to the camera base, important!
@@ -45,8 +44,13 @@ class SyntheticPipeline(VideoPipeline):
                 points_3d, R_cam_vec, T_cam, self.config.camera_matrix, None
             )[0].squeeze()
 
-            # track_index_mask = np.arange(len(track_slice))
             slice_mask = (track_slice > 0).all(axis=1)
+
+            drop = np.arange(1, 4) * 4 + index
+            drop_bool = np.full(slice_mask.shape, True)
+            drop_bool[drop] = False
+            slice_mask = slice_mask & drop_bool
+
             index_mask = np.arange(len(points_3d))[slice_mask]
 
             track_slice = track_slice[slice_mask]
@@ -71,7 +75,7 @@ class SyntheticPipeline(VideoPipeline):
     def _get_synthetic_camera_rotations(self):
         # matrizes de rotação para o posicionamento das cameras
         r1 = cv2.Rodrigues(np.array([-pi / 2, 0.0, 0.0]))[0]
-        r2 = cv2.Rodrigues(np.array([0, -pi / 4, 0]))[0]
+        r2 = cv2.Rodrigues(np.array([0, 0, -pi / 4]))[0]
         r3 = cv2.Rodrigues(np.array([0, -pi / 2, 0]))[0]
 
         # vetores de rotação das cameras na base global
@@ -79,7 +83,7 @@ class SyntheticPipeline(VideoPipeline):
             [
                 r1,
                 np.matmul(r1, r3),
-                np.matmul(r1, np.matmul(r3, r2)),
+                np.matmul(r1, np.matmul(r3, np.matmul(r3, r2))),
                 np.matmul(r1, np.matmul(r3, np.matmul(r3, r3))),
                 np.matmul(r1, r1),
             ]

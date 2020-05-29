@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from typing import Tuple, Any, List
+from typing import Tuple, Any, List, Union
 import ruamel.yaml
 from ruamel.yaml.constructor import SafeConstructor
 import dacite
+import numpy as np
 
 
 @dataclass
@@ -35,41 +36,12 @@ class OpticalFlowConfig:
 
 @dataclass
 class KLTConfig:
+    display_klt_debug_frames: bool
     frames_to_skip: int
     reset_period: int
 
     corner_selection: CornerSelectionConfig
     optical_flow: OpticalFlowConfig
-
-
-@dataclass
-class FivePointInitConfig:
-    first_frame_fixed: bool
-
-
-@dataclass
-class InitConfig:
-    method: str
-    error_threshold: float
-
-    five_point: FivePointInitConfig
-
-
-@dataclass
-class FivePointAlgorithmConfig:
-    min_number_of_points: int
-    threshold: float
-    probability: float
-
-
-@dataclass
-class RecoverPoseConfig:
-    distance_threshold: float
-
-
-@dataclass
-class SolvePnPConfig:
-    min_number_of_points: int
 
 
 @dataclass
@@ -82,11 +54,61 @@ class RollingWindowConfig:
 
 @dataclass
 class BundleAdjustmentConfig:
-    use_with_first_pair: bool
+    tol: float
+    method: str
+    verbose: int
+    camera_matrix: Any
+
     use_with_rolling_window: bool
     use_at_end: bool
     rolling_window: RollingWindowConfig
-    verbosity: int
+
+    def __post_init__(self):
+        self.camera_matrix = np.array(self.camera_matrix)
+
+
+@dataclass
+class FivePointAlgorithmConfig:
+    min_number_of_points: int
+    threshold: float
+    probability: float
+    camera_matrix: Any
+    distance_threshold: float
+
+    def __post_init__(self):
+        self.camera_matrix = np.array(self.camera_matrix)
+
+
+@dataclass
+class SolvePnPConfig:
+    min_number_of_points: int
+    camera_matrix: Any
+
+    def __post_init__(self):
+        self.camera_matrix = np.array(self.camera_matrix)
+
+
+@dataclass
+class FivePointInitConfig:
+    five_pt_algorithm: FivePointAlgorithmConfig
+    first_frame_fixed: bool
+    use_bundle_adjustment: bool
+    bundle_adjustment: Union[BundleAdjustmentConfig, None]
+
+    def __post_init__(self):
+        assert self.use_bundle_adjustment and self.bundle_adjustment is not None
+
+
+@dataclass
+class InitConfig:
+    method: str
+    error_threshold: float
+    camera_matrix: Any
+
+    five_pt: FivePointInitConfig
+
+    def __post_init__(self):
+        self.camera_matrix = np.array(self.camera_matrix)
 
 
 @dataclass
@@ -101,8 +123,7 @@ class VideoPipelineConfig:
 
     init: InitConfig
 
-    five_point_algorithm: FivePointAlgorithmConfig
-    recover_pose_algorithm: RecoverPoseConfig
+    five_pt_algorithm: FivePointAlgorithmConfig
     solvepnp: SolvePnPConfig
 
     bundle_adjustment: BundleAdjustmentConfig
@@ -111,6 +132,8 @@ class VideoPipelineConfig:
         assert (
             self.use_five_pt_algorithm or self.use_solve_pnp
         ), "At least one algorithm between fiv-pt and solvepnp must be used"
+
+        self.camera_matrix = np.array(self.camera_matrix)
 
 
 @dataclass

@@ -1,6 +1,7 @@
 import os
 import numpy as np
 
+
 TYPE_CALIBRATION_MATRIX = 0
 TYPE_CAMERA = 1
 TYPE_POINT = 2
@@ -47,6 +48,11 @@ def call_viz():
         + " "
         + os.path.join(os.getcwd(), "out", "viz_data.csv")
     )
+
+
+def visualize(camera_matrix, Rs, Ts, points):
+    write_to_viz_file(camera_matrix, Rs, Ts, points)
+    call_viz()
 
 
 def progress_bar(realized, total, length=20):
@@ -112,4 +118,22 @@ def get_last_track_pair(tracks, masks):
 def points_to_cloud(points, indexes):
     cloud = np.full((max(indexes) + 1, 3), None, dtype=np.float_)
     cloud[indexes] = points
+    return cloud
+
+
+def add_points_to_cloud(cloud, points, index_mask):
+    # if cloud is None:
+    #     cloud = np.full((max(index_mask) * 2, 3), None, dtype=np.float_)
+    assert cloud is not None
+
+    cloud_mask = get_not_nan_index_mask(cloud)
+    new_points_mask = np.setdiff1d(index_mask, cloud_mask)
+
+    if max(index_mask) >= cloud.shape[0]:
+        new_cloud = np.full((max(index_mask) * 2, 3), None, dtype=np.float_)
+        new_cloud[cloud_mask] = cloud[cloud_mask]
+        cloud = new_cloud
+
+    cloud[new_points_mask] = points[np.isin(index_mask, new_points_mask)]
+
     return cloud
