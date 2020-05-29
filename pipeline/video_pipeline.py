@@ -32,10 +32,12 @@ class VideoPipeline(BasePipeline):
         file, _ = self._get_video(dir)
         track_generator = self._file_to_tracks(file)
 
-        Rs, Ts, cloud, tracks = self._init_reconstruction(track_generator)
+        Rs, Ts, cloud, tracks, masks = self._init_reconstruction(
+            track_generator
+        )
 
         Rs, Ts, cloud, tracks = self._reconstruct(
-            track_generator, Rs, Ts, cloud, tracks
+            track_generator, Rs, Ts, cloud, tracks, masks
         )
 
         utils.write_to_viz_file(self.config.camera_matrix, Rs, Ts, cloud)
@@ -44,47 +46,47 @@ class VideoPipeline(BasePipeline):
     def _init_reconstruction(self, track_generator):
         config = self.config.init
 
-        Rs = None
-        Ts = None
+        Rs = []
+        Ts = []
         cloud = None
-        tracks = None
+        tracks = []
+        masks = []
 
-        for track_index, (track_slice, new_feature_set) in enumerate(
+        for track_index, (track_slice, index_mask) in enumerate(
             track_generator
         ):
-            if new_feature_set:
-                Rs = []
-                Ts = []
-                tracks = []
-
             tracks += [track_slice]
+            masks += [index_mask]
 
             if config.method == "five_pt_algorithm":
-                Rs, Ts, cloud, tracks = self._five_pt_init(Rs, Ts, tracks)
+                Rs, Ts, cloud, tracks, masks = self._five_pt_init(
+                    Rs, Ts, tracks, masks
+                )
             elif config.method == "three_frame_combo":
                 Rs, Ts, cloud, tracks = self._three_frame_init(
-                    Rs, Ts, cloud, tracks
+                    Rs, Ts, cloud, tracks, masks
                 )
             else:
                 raise ValueError
 
-            error = self._calculate_projection_error(Rs, Ts, cloud, tracks)
+            error = self._calculate_projection_error(
+                Rs, Ts, cloud, tracks, masks
+            )
             print(f"Error: {error}")
 
             if error < config.error_threshold:
-                return Rs, Ts, cloud, tracks
+                return Rs, Ts, cloud, tracks, masks
         else:
             raise Exception("Not enough frames for init phase")
 
-    def _reconstruct(self, track_generator, Rs, Ts, cloud, tracks):
-        for index, (track_slice, new_feature_set) in enumerate(track_generator):
-            assert not new_feature_set, "Not yet implemented"
+    def _reconstruct(self, track_generator, Rs, Ts, cloud, tracks, masks):
+        for index, (track_slice, index_mask) in enumerate(track_generator):
 
             tracks += [track_slice]
-            track_pair = np.array(tracks[-2:])
+            masks += [index_mask]
 
-            R, T, points = self._calculate_pose(
-                track_pair, Rs[-1], Ts[-1], cloud
+            R, T, points, index_mask = self._calculate_pose(
+                tracks, masks, Rs[-1], Ts[-1], cloud
             )
 
             if R is None:
@@ -92,35 +94,38 @@ class VideoPipeline(BasePipeline):
                 break
 
             if points is not None:
-                cloud = self._merge_points_into_cloud(cloud, points)
+                cloud = self._add_points_to_cloud(cloud, points, index_mask)
 
             Rs += [R]
             Ts += [T]
 
-            Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks)
+            Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks, masks)
 
         else:
-            Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks, True)
+            Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks, masks, True)
 
         return Rs, Ts, cloud, tracks
 
-    def _calculate_pose(self, track_pair, prev_R, prev_T, cloud):
+    def _calculate_pose(self, tracks, masks, prev_R, prev_T, cloud):
+        track_pair, pair_mask = utils.get_last_track_pair(tracks, masks)
+
         if len(track_pair) == 1:
             return (*utils.init_rt(), None)
 
         assert len(track_pair) == 2
 
-        R, T, points = None, None, None
+        R, T, points, index_mask = None, None, None, None
 
         if self.config.use_five_pt_algorithm:
-            R, T, points = self._run_five_pt_algorithm(
+            R, T, points, bool_mask = self._run_five_pt_algorithm(
                 track_pair, prev_R, prev_T
             )
+            index_mask = pair_mask[bool_mask]
 
         if self.config.use_solve_pnp:
             # refine R and T based on previous point cloud
             # result is in camera 0's coordinate system
-            R, T = self._run_solvepnp(track_pair[1], cloud, R, T,)
+            R, T = self._run_solvepnp(tracks[-1], masks[-1], cloud, R, T)
 
         if self.config.use_reconstruct_tracks:
             points = self._reproject_tracks_to_3d(
@@ -130,52 +135,56 @@ class VideoPipeline(BasePipeline):
                 T_2=np.matmul(R.transpose(), -T),
                 tracks=track_pair,
             )
+            index_mask = pair_mask
 
-        return R, T, points
+        return R, T, points, index_mask
 
-    def _merge_points_into_cloud(self, cloud, points):
+    def _add_points_to_cloud(self, cloud, points, index_mask):
         if cloud is None:
-            cloud = np.full((len(points), 3), None, dtype=np.float_)
+            cloud = np.full((max(index_mask) * 2, 3), None, dtype=np.float_)
 
-        # check which points still have no data
-        points_not_nan_mask = ~utils.get_nan_mask(points)
-        cloud_nan_mask = utils.get_nan_mask(cloud)
+        cloud_mask = utils.get_not_nan_index_mask(cloud)
+        new_points_mask = np.setdiff1d(index_mask, cloud_mask)
 
-        # for those, replace nan by a value
-        replace_mask = cloud_nan_mask & points_not_nan_mask
-        average_mask = points_not_nan_mask & ~replace_mask
+        if max(index_mask) > cloud.shape[0]:
+            new_cloud = np.full((max(index_mask) * 2, 3), None, dtype=np.float_)
+            new_cloud[cloud_mask] = cloud[cloud_mask]
+            cloud = new_cloud
 
-        # for the others, do the average (results in exponential smoothing)
-        cloud[replace_mask] = points[replace_mask]
-        # cloud[average_mask] = (cloud[average_mask] + points[average_mask]) / 2
+        cloud[new_points_mask] = points[np.isin(index_mask, new_points_mask)]
 
         return cloud
 
-    def _calculate_projection_error(self, Rs, Ts, cloud, tracks):
+    def _calculate_projection_error(self, Rs, Ts, cloud, tracks, masks):
+        # TODO: convert mask type
+
         if cloud is None:
             return float("inf")
 
-        cloud_mask = ~utils.get_nan_mask(cloud)
+        cloud_mask = utils.get_not_nan_index_mask(cloud)
         error = 0
 
-        for index, (R, T, original_track) in enumerate(zip(Rs, Ts, tracks)):
+        for index, (R, T, original_track, track_mask) in enumerate(
+            zip(Rs, Ts, tracks, masks)
+        ):
+            intersection_mask = utils.get_intersection_mask(
+                cloud_mask, track_mask
+            )
+            # track_bool_mask = [item in intersection_mask for item in track_mask]
+            track_bool_mask = np.isin(track_mask, intersection_mask)
+
             R_cam, T_cam = utils.invert_reference_frame(R, T)
             R_cam_vec = cv2.Rodrigues(R_cam)[0]
 
             projection_track = cv2.projectPoints(
-                cloud[cloud_mask],
+                cloud[intersection_mask],
                 R_cam_vec,
                 T_cam,
                 self.config.camera_matrix,
                 None,
             )[0].squeeze()
 
-            # filter out points not in both tracks
-            original_track_mask = ~utils.get_nan_mask(original_track)
-            projection_track_mask = ~utils.get_nan_mask(projection_track)
-            mask = original_track_mask[cloud_mask] & projection_track_mask
-
-            delta = original_track[cloud_mask][mask] - projection_track[mask]
+            delta = original_track[track_bool_mask] - projection_track
             error += np.linalg.norm(delta, axis=1).mean()
 
         return error / (index + 1)
@@ -183,13 +192,17 @@ class VideoPipeline(BasePipeline):
     def _trigger_klt_reset(self):
         raise NotImplementedError
 
-    def _run_ba(self, Rs, Ts, cloud, tracks, final_frame=False):
+    def _run_ba(self, Rs, Ts, cloud, tracks, masks, final_frame=False):
+        # TODO: convert mask type
+
         config = self.config.bundle_adjustment
 
         if (config.use_with_first_pair and len(Rs) == 2) or (
             config.use_at_end and final_frame
         ):
-            Rs, Ts, cloud = self.bundle_adjuster.run(Rs, Ts, cloud, tracks,)
+            Rs, Ts, cloud = self.bundle_adjuster.run(
+                Rs, Ts, cloud, tracks, masks
+            )
 
         elif (
             config.use_with_rolling_window
@@ -212,6 +225,7 @@ class VideoPipeline(BasePipeline):
                     Ts[ba_window_start::ba_window_step],
                     cloud,
                     tracks[ba_window_start::ba_window_step],
+                    masks[ba_window_start::ba_window_step],
                 )
             elif method == "growing_step":
                 indexes = [
@@ -227,6 +241,7 @@ class VideoPipeline(BasePipeline):
                     itemgetter(*indexes)(Ts),
                     cloud,
                     itemgetter(*indexes)(tracks),
+                    itemgetter(*indexes)(masks),
                 )
 
                 for index, R, T in zip(indexes, R_opt, T_opt):
@@ -235,20 +250,31 @@ class VideoPipeline(BasePipeline):
 
         return Rs, Ts, cloud
 
-    def _five_pt_init(self, Rs, Ts, tracks):
+    def _five_pt_init(self, Rs, Ts, tracks, masks):
+        # TODO: convert mask type
+
         config = self.config.init.five_point
+
         if len(tracks) == 1:
             R, T = utils.init_rt()
-            return [R], [T], None, tracks
+            return [R], [T], None, tracks, masks
 
         if len(tracks) > 2:
             if config.first_frame_fixed:
-                Rs, Ts, tracks = Rs[:1], Ts[:1], [tracks[0], tracks[-1]]
+                Rs, Ts, tracks, masks = (
+                    Rs[:1],
+                    Ts[:1],
+                    [tracks[0], tracks[-1]],
+                    [masks[0], masks[-1]],
+                )
             else:
-                Rs, Ts, tracks = Rs[:1], Ts[:1], tracks[-2:]
+                Rs, Ts, tracks, masks = Rs[:1], Ts[:1], tracks[-2:], masks[-2:]
 
-        track_pair = np.array(tracks)
-        R, T, points = self._run_five_pt_algorithm(track_pair, Rs[-1], Ts[-1])
+        track_pair, pair_mask = utils.get_last_track_pair(tracks, masks)
+
+        R, T, points, bool_mask = self._run_five_pt_algorithm(
+            track_pair, Rs[-1], Ts[-1]
+        )
         if R is None:
             self._trigger_klt_reset()
 
@@ -260,12 +286,14 @@ class VideoPipeline(BasePipeline):
             tracks=track_pair,
         )
 
+        cloud = utils.points_to_cloud(points=points, indexes=pair_mask)
+
         Rs += [R]
         Ts += [T]
 
-        Rs, Ts, cloud = self._run_ba(Rs, Ts, points, tracks)
+        Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks, masks)
 
-        return Rs, Ts, points, tracks
+        return Rs, Ts, cloud, tracks, masks
 
     def _three_frame_init(self, Rs, Ts, cloud, tracks):
         raise NotImplementedError

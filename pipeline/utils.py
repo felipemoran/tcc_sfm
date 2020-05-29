@@ -68,8 +68,18 @@ def translate_points_to_base_frame(comp_R, comp_T, points):
     return (comp_T + np.matmul(comp_R, points.transpose())).transpose()
 
 
-def get_nan_mask(input_array):
+def get_nan_bool_mask(input_array):
     return (np.isnan(input_array)).any(axis=1)
+
+
+def get_nan_index_mask(input_array):
+    nan_bool_mask = get_nan_bool_mask(input_array)
+    return np.arange(len(input_array))[nan_bool_mask]
+
+
+def get_not_nan_index_mask(input_array):
+    not_nan_bool_mask = ~get_nan_bool_mask(input_array)
+    return np.arange(len(input_array))[not_nan_bool_mask]
 
 
 def invert_reference_frame(R, T):
@@ -80,3 +90,26 @@ def invert_reference_frame(R, T):
 
 def init_rt():
     return np.eye(3), np.zeros((3, 1), dtype=np.float_)
+
+
+def get_intersection_mask(a, b):
+    return np.intersect1d(a, b)
+
+
+def get_last_track_pair(tracks, masks):
+    pair_mask = get_intersection_mask(masks[-2], masks[-1])
+    track_pair = np.array(
+        [
+            # track[[item in pair_mask for item in mask]]
+            track[np.isin(mask, pair_mask)]
+            for (track, mask) in zip(tracks[-2:], masks[-2:])
+        ],
+        dtype=np.float_,
+    )
+    return track_pair, pair_mask
+
+
+def points_to_cloud(points, indexes):
+    cloud = np.full((max(indexes) + 1, 3), None, dtype=np.float_)
+    cloud[indexes] = points
+    return cloud

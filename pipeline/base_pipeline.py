@@ -25,184 +25,147 @@ class BasePipeline:
 
         return file, filename
 
-    def _file_to_tracks(self, file):
-        reset_features = True
-        next_frame = None
-
-        # this counter is actually for processed frames and not for raw frames
-        frame_counter = 0
-
+    def _frame_skipper(self, file, frames_to_skip):
         while True:
-            if reset_features:
-                reset_features = False
-                ref_frame = frame_counter
+            for _ in range(frames_to_skip + 1):
+                ret, color_frame = file.read()
+                if not ret:
+                    return
+            bw_frame = cv2.cvtColor(color_frame, cv2.COLOR_BGR2GRAY)
+            yield color_frame, bw_frame
 
-                # check if we're in the first iteration
-                if next_frame is None:
-                    # if yes, get the first frame
-                    ret, next_frame_color = file.read()
-                    assert ret, "File has no frames!"
-                    next_frame = cv2.cvtColor(
-                        next_frame_color, cv2.COLOR_BGR2GRAY
-                    )
+    def _file_to_tracks(self, file):
+        config = self.config.klt
+        reset_features = True
 
-                # generate new feature set
-                next_features = cv2.goodFeaturesToTrack(
-                    image=next_frame,
-                    maxCorners=self.config.klt.corner_selection.max_corners,
-                    qualityLevel=self.config.klt.corner_selection.quality_level,
-                    minDistance=self.config.klt.corner_selection.min_distance,
-                    mask=None,
-                    blockSize=self.config.klt.corner_selection.block_size,
-                    # gradientSize=,
-                    # corners=,
-                    # useHarrisDetector=,
-                    # k=,
-                )
+        prev_frame = None
+        prev_features = np.empty((0, 2), dtype=np.float_)
+        features = np.empty((0, 2), dtype=np.float_)
+        indexes = np.empty((0,))
+        start_index = 100
 
-                # reset control variables
-                num_features = len(next_features)
-                track_indexes = np.array(range(len(next_features)))
-                is_new_feature_set = True
-
-                # mimics the same format as status from cv2.calcOpticalFlowPyrLK()
-                status = np.full((len(next_features), 1), True)
-
-            else:
-                # Read frame
-                # skip some frames between frame reads. The last one is a useful frame
-                for _ in range(self.config.klt.frames_to_skip + 1):
-                    ret, next_frame_color = file.read()
-                    if not ret:
-                        return
-
-                frame_counter += 1
-                print("Frame {}: ".format(frame_counter), end="")
-
-                next_frame = cv2.cvtColor(next_frame_color, cv2.COLOR_BGR2GRAY)
-
-                # calculate optical flow
-                next_features, status, err = cv2.calcOpticalFlowPyrLK(
+        for counter, (color_frame, bw_frame) in enumerate(
+            self._frame_skipper(file, config.frames_to_skip)
+        ):
+            if prev_frame is not None:
+                features, status, err = cv2.calcOpticalFlowPyrLK(
                     prevImg=prev_frame,
-                    nextImg=next_frame,
+                    nextImg=bw_frame,
                     prevPts=prev_features,
                     nextPts=None,
-                    # status=,
-                    # err=,
                     winSize=(
-                        self.config.klt.optical_flow.window_size.height,
-                        self.config.klt.optical_flow.window_size.width,
+                        config.optical_flow.window_size.height,
+                        config.optical_flow.window_size.width,
                     ),
-                    maxLevel=self.config.klt.optical_flow.max_level,
+                    maxLevel=config.optical_flow.max_level,
                     criteria=(
-                        self.config.klt.optical_flow.criteria.criteria_sum,
-                        self.config.klt.optical_flow.criteria.max_iter,
-                        self.config.klt.optical_flow.criteria.eps,
+                        config.optical_flow.criteria.criteria_sum,
+                        config.optical_flow.criteria.max_iter,
+                        config.optical_flow.criteria.eps,
                     ),
-                    # flags=,
-                    # minEigThreshold=
+                )
+                status = status.squeeze().astype(np.bool)
+                indexes = indexes[status]
+                features = features.squeeze()[status]
+
+            if reset_features or counter % config.reset_period == 0:
+                reset_features = False
+
+                new_features = cv2.goodFeaturesToTrack(
+                    image=bw_frame,
+                    maxCorners=config.corner_selection.max_corners,
+                    qualityLevel=config.corner_selection.quality_level,
+                    minDistance=config.corner_selection.min_distance,
+                    mask=None,
+                    blockSize=config.corner_selection.block_size,
+                ).squeeze()
+
+                features, indexes = self._match_features(
+                    features, indexes, new_features, start_index
+                )
+                start_index = max(indexes) + 1
+
+            yield features, indexes
+            prev_frame, prev_features = bw_frame, features
+
+            if self.display_klt_debug_frames:
+                self._display_klt_debug_frame(
+                    color_frame, features, prev_features, indexes,
                 )
 
-                if frame_counter - ref_frame == self.config.klt.reset_period:
-                    reset_features = True
-
-                if self.display_klt_debug_frames:
-                    self._display_klt_debug_frame(
-                        next_frame_color,
-                        status,
-                        next_features,
-                        prev_features,
-                        track_indexes,
-                    )
-
-            # generate track slice
-            (
-                track_indexes,
-                next_features,
-                track_slice,
-            ) = self._features_to_track_slice(
-                num_features=num_features,
-                track_indexes=track_indexes,
-                frame_features=next_features,
-                status=status
-                # mimics the same format as status from cv2.calcOpticalFlowPyrLK()
-            )
-
-            yield track_slice, is_new_feature_set
-
-            prev_frame = next_frame.copy()  # do I really need this .copy() ?
-            prev_features = next_features
-
-            is_new_feature_set = False
-
     def _display_klt_debug_frame(
-        self,
-        next_frame_color,
-        status,
-        next_features,
-        prev_features,
-        track_indexes,
+        self, color_frame, features, prev_features, indexes,
     ):
-        # if mask is None:
-        #     mask = np.zeros_like(next_frame_color)
-        mask = np.zeros_like(next_frame_color)
+        mask = np.zeros_like(color_frame)
 
-        for feature_index, feature_status in enumerate(status):
-            if feature_status[0] == 0:
-                continue
-            next_x, next_y = next_features[feature_index]
-            prev_x, prev_y = prev_features[feature_index]
+        for feature, prev_feature, index in zip(
+            features, prev_features, indexes
+        ):
+            # next_x, next_y = feature
+            # prev_x, prev_y = prev_feature
 
             mask = cv2.line(
                 mask,
-                (next_x, next_y),
-                (prev_x, prev_y),
-                debug_colors[feature_index].tolist(),
+                # (next_x, next_y),
+                # (prev_x, prev_y),
+                tuple(feature),
+                tuple(prev_feature),
+                debug_colors[index].tolist(),
                 2,
             )
-            next_frame_color = cv2.circle(
-                next_frame_color,
-                (next_x, next_y),
+            color_frame = cv2.circle(
+                color_frame,
+                tuple(feature),
                 5,
-                debug_colors[track_indexes[feature_index]].tolist(),
+                debug_colors[index].tolist(),
                 -1,
             )
 
-        img = cv2.add(next_frame_color, mask)
+        img = cv2.add(color_frame, mask)
 
         cv2.imshow("frame", img)
-        time.sleep(0.2)
+        cv2.waitKey(200)
 
-    @staticmethod
-    def _features_to_track_slice(
-        num_features, track_indexes, frame_features, status
+    def _match_features(
+        self, old_features, old_indexes, new_features, index_start
     ):
-        status = status.squeeze().astype(np.bool)
+        if len(old_features) == 0:
+            return new_features, np.arange(len(new_features)) + index_start
 
-        # remove from track_indexes those indexes that are not valid anymore according to frame_features_status
-        track_indexes = track_indexes[status]
+        # TODO: add to config
+        closeness_threshold = 10
 
-        # remove features that are not valid
-        frame_features = frame_features.squeeze()
-        frame_features = frame_features[status]
+        old_repeated = np.repeat(
+            old_features, new_features.shape[0], axis=0
+        ).reshape((old_features.shape[0], new_features.shape[0], 2))
 
-        # create track slice (Nx2)
-        track_slice = np.full(
-            (
-                num_features,  # number of features detected on reference frame for track
-                2,  # x and y coordinates for a point in an image
-            ),
-            None,
-            dtype=np.float_,
+        new_repeated = (
+            np.repeat(new_features, old_features.shape[0], axis=0)
+            .reshape((new_features.shape[0], old_features.shape[0], 2))
+            .transpose((1, 0, 2))
         )
 
-        # and populate it
-        for feature_index, track_index in enumerate(track_indexes):
-            track_slice[track_index] = frame_features[feature_index]
+        distances = np.linalg.norm(old_repeated - new_repeated, axis=2)
+        close_points = distances < closeness_threshold
 
-        return track_indexes, frame_features, track_slice
+        new_points_mask = np.arange(len(new_features))[
+            close_points.sum(axis=0) == 0
+        ]
+        new_points = new_features[new_points_mask]
+        new_indexes = np.arange(len(new_points)) + index_start
 
-    def _run_solvepnp(self, track_slice, cloud, R=None, T=None):
+        # TODO: limit number of returned features
+
+        features = np.vstack((old_features, new_features[new_points_mask]))
+        indexes = np.concatenate((old_indexes, new_indexes))
+
+        assert len(features) == len(indexes)
+
+        return features, indexes
+
+    def _run_solvepnp(self, track_slice, track_mask, cloud, R=None, T=None):
+        # TODO: convert mask type
+
         config = self.config.solvepnp
 
         if R is not None and T is not None:
@@ -215,19 +178,19 @@ class BasePipeline:
         ), "Either both R and T are None or none of the two"
 
         # create new mask based on existing point cloud's and newly created track's
-        track_slice_mask = ~utils.get_nan_mask(track_slice)
-        cloud_mask = ~utils.get_nan_mask(cloud)
-        proj_mask = track_slice_mask & cloud_mask
+        cloud_mask = utils.get_not_nan_index_mask(cloud)
+        intersection_mask = utils.get_intersection_mask(cloud_mask, track_mask)
+        track_bool_mask = np.isin(track_mask, intersection_mask)
 
-        if proj_mask.sum() < config.min_number_of_points:
+        if len(intersection_mask) < config.min_number_of_points:
             return R, T
 
         # go back to camera's reference frame
         R, T = utils.invert_reference_frame(R, T)
 
         return_value, R, T = cv2.solvePnP(
-            objectPoints=cloud[proj_mask],
-            imagePoints=track_slice[proj_mask],
+            objectPoints=cloud[intersection_mask],
+            imagePoints=track_slice[track_bool_mask],
             cameraMatrix=self.config.camera_matrix,
             distCoeffs=None,
             rvec=None if R is None else cv2.Rodrigues(R)[0],
@@ -248,19 +211,13 @@ class BasePipeline:
         five_pt_config = self.config.five_point_algorithm
         recover_pose_config = self.config.recover_pose_algorithm
 
-        # Remove all points that don't have correspondence between frames
-        track_mask = ~np.isnan(tracks).any(axis=(0, 2))
-
-        if track_mask.sum() < five_pt_config.min_number_of_points:
-            return None, None, None
-
-        # Since findEssentialMat can't receive masks, we gotta "wrap" the inputs with one
-        trimmed_tracks = tracks[:, track_mask]
+        if len(tracks[0]) < five_pt_config.min_number_of_points:
+            return None, None, None, None
 
         # We have no 3D point info so we calculate based on the two cameras
         E, five_pt_mask = cv2.findEssentialMat(
-            points1=trimmed_tracks[0],
-            points2=trimmed_tracks[1],
+            points1=tracks[0],
+            points2=tracks[1],
             cameraMatrix=self.config.camera_matrix,
             method=cv2.RANSAC,
             prob=five_pt_config.probability,
@@ -275,8 +232,8 @@ class BasePipeline:
 
         _, R, T, pose_mask, points_4d = cv2.recoverPose(
             E=E,
-            points1=trimmed_tracks[0],
-            points2=trimmed_tracks[1],
+            points1=tracks[0],
+            points2=tracks[1],
             cameraMatrix=self.config.camera_matrix,
             distanceThresh=recover_pose_config.distance_threshold,
             mask=five_pt_mask.copy(),
@@ -287,13 +244,9 @@ class BasePipeline:
         # filter out 3d_points and point_indexes according to mask
         final_mask = pose_mask.squeeze().astype(np.bool)
 
-        selected_points_3d = cv2.convertPointsFromHomogeneous(
+        points_3d = cv2.convertPointsFromHomogeneous(
             points_4d.transpose()
-        ).squeeze()
-
-        points_3d = np.full((tracks.shape[1], 3), None, dtype=np.float_)
-        selected_points_3d[~final_mask] = np.array([None, None, None])
-        points_3d[track_mask] = selected_points_3d
+        ).squeeze()[final_mask]
 
         # Convert it back to first camera base system
         R, T = utils.invert_reference_frame(R, T)
@@ -304,7 +257,7 @@ class BasePipeline:
         )
         R, T = utils.compose_rts(R, T, prev_R, prev_T)
 
-        return R, T, points_3d
+        return R, T, points_3d, final_mask
 
     def _reproject_tracks_to_3d(self, R_1, T_1, R_2, T_2, tracks):
         if any([R_1 is None, T_1 is None, R_2 is None, T_2 is None,]):

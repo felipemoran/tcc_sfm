@@ -5,7 +5,7 @@ import numpy as np
 from math import pi
 from pipeline import utils
 from pipeline.video_pipeline import VideoPipeline
-from config import VideoPipelineConfig
+from pipeline.config import VideoPipelineConfig
 from ruamel.yaml import YAML
 import dacite
 
@@ -36,10 +36,6 @@ class SyntheticPipeline(VideoPipeline):
         Rs = self._get_synthetic_camera_rotations()
         Ts = self._get_synthetic_camera_translations()
 
-        # mimic otiginal function variables
-        is_new_feature_set = True
-        frame_counter = 0
-
         for index, (R, T) in enumerate(zip(Rs, Ts)):
             # convert to the camera base, important!
             R_cam, T_cam = utils.invert_reference_frame(R, T)
@@ -51,12 +47,11 @@ class SyntheticPipeline(VideoPipeline):
 
             # track_index_mask = np.arange(len(track_slice))
             slice_mask = (track_slice > 0).all(axis=1)
-            track_slice[~slice_mask] = np.array([None, None])
+            index_mask = np.arange(len(points_3d))[slice_mask]
 
-            yield track_slice, is_new_feature_set
+            track_slice = track_slice[slice_mask]
 
-            is_new_feature_set = False
-            frame_counter += 1
+            yield track_slice, index_mask
 
     def _get_synthetic_points(self):
         # points_3d = np.array(

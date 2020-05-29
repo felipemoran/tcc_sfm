@@ -43,14 +43,14 @@ class BundleAdjuster:
         self.optimized_points = None
         self.optimized_cameras = None
 
-    def run(self, Rs, Ts, cloud, tracks):
+    def run(self, Rs, Ts, cloud, tracks, masks):
         (
             camera_params,
             points_3d,
             points_2d,
             camera_indexes,
             point_indexes,
-        ) = self._prepare_optimization_input(cloud, Rs, Ts, tracks)
+        ) = self._prepare_optimization_input(cloud, Rs, Ts, tracks, masks)
 
         # Optimize
         optimized_cameras, optimized_points = self.optimize(
@@ -60,7 +60,7 @@ class BundleAdjuster:
             camera_indices=camera_indexes,
             point_indices=point_indexes,
         )
-        (cloud, Rs, Ts,) = self._parse_optimization_result(
+        Rs, Ts, cloud = self._parse_optimization_result(
             point_cloud=cloud,
             optimized_cameras=optimized_cameras,
             optimized_points=optimized_points,
@@ -68,7 +68,7 @@ class BundleAdjuster:
 
         return Rs, Ts, cloud
 
-    def _prepare_optimization_input(self, point_cloud, Rs, Ts, tracks):
+    def _prepare_optimization_input(self, cloud, Rs, Ts, tracks, masks):
         assert len(Rs) == len(Ts) == len(tracks)
 
         camera_params = []
@@ -82,26 +82,35 @@ class BundleAdjuster:
         camera_params = np.array(camera_params, dtype=np.float_)
         assert camera_params.shape == (len(Rs), 6)
 
-        cloud_not_nan_mask = ~utils.get_nan_mask(point_cloud)
+        cloud_mask = utils.get_not_nan_index_mask(cloud)
+        cloud_reindex = np.full(cloud.shape[0], None, dtype=np.float_)
+        cloud_reindex[cloud_mask] = np.arange(len(cloud_mask))
 
-        for index, track in enumerate(tracks):
-            track_mask = ~utils.get_nan_mask(track)
-            mask = track_mask & cloud_not_nan_mask
+        for index, (track, track_mask) in enumerate(zip(tracks, masks)):
+            intersection_mask = utils.get_intersection_mask(
+                cloud_mask, track_mask
+            )
+            # track_bool_mask = [item in intersection_mask for item in track_mask]
+            track_bool_mask = np.isin(track_mask, intersection_mask)
 
-            camera_indexes = np.append(
-                camera_indexes, np.full(mask.sum(), index)
+            camera_indexes_row = np.full(len(intersection_mask), index)
+            camera_indexes = np.append(camera_indexes, camera_indexes_row)
+
+            point_indexes_row = cloud_reindex[intersection_mask].astype(int)
+            point_indexes = np.append(point_indexes, point_indexes_row)
+
+            points_2d_row = track[track_bool_mask]
+            points_2d = np.vstack((points_2d, points_2d_row))
+
+            assert (
+                len(camera_indexes_row)
+                == len(point_indexes_row)
+                == len(points_2d_row)
             )
-            point_indexes = np.append(
-                point_indexes,
-                np.arange(cloud_not_nan_mask.sum())[
-                    track_mask[cloud_not_nan_mask]
-                ],
-            )
-            points_2d = np.vstack((points_2d, track[mask]))
 
         assert len(camera_indexes) == len(point_indexes) == len(points_2d)
 
-        points_3d = point_cloud[cloud_not_nan_mask]
+        points_3d = cloud[cloud_mask]
 
         return (
             camera_params,
@@ -118,7 +127,7 @@ class BundleAdjuster:
         Rs = []
         Ts = []
 
-        not_nan_mask = ~utils.get_nan_mask(point_cloud)
+        not_nan_mask = ~utils.get_nan_bool_mask(point_cloud)
         point_cloud[not_nan_mask] = optimized_points
 
         for camera in optimized_cameras:
@@ -128,7 +137,7 @@ class BundleAdjuster:
             Rs += [R]
             Ts += [T]
 
-        return point_cloud, Rs, Ts
+        return Rs, Ts, point_cloud
 
     def _rotate(self, points, rot_vecs):
         """Rotate 3D points by given rotation vectors.
