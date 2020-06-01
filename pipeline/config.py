@@ -8,7 +8,6 @@ import numpy as np
 
 @dataclass
 class CornerSelectionConfig:
-    max_corners: int
     quality_level: float
     min_distance: int
     block_size: int
@@ -37,8 +36,11 @@ class OpticalFlowConfig:
 @dataclass
 class KLTConfig:
     display_klt_debug_frames: bool
+    klt_debug_frames_delay: int
     frames_to_skip: int
     reset_period: int
+    closeness_threshold: int
+    max_features: int
 
     corner_selection: CornerSelectionConfig
     optical_flow: OpticalFlowConfig
@@ -70,7 +72,7 @@ class BundleAdjustmentConfig:
 @dataclass
 class FivePointAlgorithmConfig:
     min_number_of_points: int
-    threshold: float
+    essential_mat_threshold: float
     probability: float
     camera_matrix: Any
     distance_threshold: float

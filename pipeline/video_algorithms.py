@@ -18,43 +18,18 @@ def klt_generator(config, file):
     start_index = 100
 
     for counter, (color_frame, bw_frame) in enumerate(
-        frame_skipper(file, config.frames_to_skip)
+        frame_getter(file, config.frames_to_skip)
     ):
         if prev_frame is not None:
-            features, status, err = cv2.calcOpticalFlowPyrLK(
-                prevImg=prev_frame,
-                nextImg=bw_frame,
-                prevPts=prev_features,
-                nextPts=None,
-                winSize=(
-                    config.optical_flow.window_size.height,
-                    config.optical_flow.window_size.width,
-                ),
-                maxLevel=config.optical_flow.max_level,
-                criteria=(
-                    config.optical_flow.criteria.criteria_sum,
-                    config.optical_flow.criteria.max_iter,
-                    config.optical_flow.criteria.eps,
-                ),
+            features, indexes = track_features(
+                bw_frame, config, indexes, prev_features, prev_frame
             )
-            status = status.squeeze().astype(np.bool)
-            indexes = indexes[status]
-            features = features.squeeze()[status]
 
         if reset_features or counter % config.reset_period == 0:
             reset_features = False
 
-            new_features = cv2.goodFeaturesToTrack(
-                image=bw_frame,
-                maxCorners=config.corner_selection.max_corners,
-                qualityLevel=config.corner_selection.quality_level,
-                minDistance=config.corner_selection.min_distance,
-                mask=None,
-                blockSize=config.corner_selection.block_size,
-            ).squeeze()
-
-            features, indexes = match_features(
-                features, indexes, new_features, start_index
+            features, indexes = get_new_features(
+                bw_frame, config, features, indexes, start_index
             )
             start_index = max(indexes) + 1
 
@@ -63,39 +38,85 @@ def klt_generator(config, file):
 
         if config.display_klt_debug_frames:
             display_klt_debug_frame(
-                color_frame, features, prev_features, indexes,
+                color_frame,
+                features,
+                prev_features,
+                indexes,
+                config.klt_debug_frames_delay,
             )
 
 
-def match_features(old_features, old_indexes, new_features, index_start):
+def get_new_features(bw_frame, config, features, indexes, start_index):
+    new_features = cv2.goodFeaturesToTrack(
+        image=bw_frame,
+        maxCorners=config.max_features,
+        qualityLevel=config.corner_selection.quality_level,
+        minDistance=config.corner_selection.min_distance,
+        mask=None,
+        blockSize=config.corner_selection.block_size,
+    ).squeeze()
+    features, indexes = match_features(
+        features,
+        indexes,
+        new_features,
+        start_index,
+        config.closeness_threshold,
+        config.max_features,
+    )
+    return features, indexes
+
+
+def track_features(bw_frame, config, indexes, prev_features, prev_frame):
+    features, status, err = cv2.calcOpticalFlowPyrLK(
+        prevImg=prev_frame,
+        nextImg=bw_frame,
+        prevPts=prev_features,
+        nextPts=None,
+        winSize=(
+            config.optical_flow.window_size.height,
+            config.optical_flow.window_size.width,
+        ),
+        maxLevel=config.optical_flow.max_level,
+        criteria=(
+            config.optical_flow.criteria.criteria_sum,
+            config.optical_flow.criteria.max_iter,
+            config.optical_flow.criteria.eps,
+        ),
+    )
+    status = status.squeeze().astype(np.bool)
+    indexes = indexes[status]
+    features = features.squeeze()[status]
+    return features, indexes
+
+
+def match_features(
+    old_features,
+    old_indexes,
+    new_features,
+    index_start,
+    threshold,
+    max_features,
+):
     if len(old_features) == 0:
         return new_features, np.arange(len(new_features)) + index_start
 
-    # TODO: add to config
-    closeness_threshold = 10
-
-    old_repeated = np.repeat(
-        old_features, new_features.shape[0], axis=0
-    ).reshape((old_features.shape[0], new_features.shape[0], 2))
-
-    new_repeated = (
-        np.repeat(new_features, old_features.shape[0], axis=0)
-        .reshape((new_features.shape[0], old_features.shape[0], 2))
-        .transpose((1, 0, 2))
+    closeness_table = get_close_points_table(
+        new_features, old_features, threshold
     )
 
-    distances = np.linalg.norm(old_repeated - new_repeated, axis=2)
-    close_points = distances < closeness_threshold
+    new_points_mask = closeness_table.sum(axis=0) == 0
 
-    new_points_mask = np.arange(len(new_features))[
-        close_points.sum(axis=0) == 0
-    ]
-    new_points = new_features[new_points_mask]
-    new_indexes = np.arange(len(new_points)) + index_start
+    new_features = new_features[new_points_mask]
+    new_indexes = np.arange(len(new_features)) + index_start
 
     # TODO: limit number of returned features
+    points_to_keep = min(max_features - len(new_features), len(old_features))
+    old_features_mask = choose_old_features(closeness_table, points_to_keep)
 
-    features = np.vstack((old_features, new_features[new_points_mask]))
+    old_features = old_features[old_features_mask]
+    old_indexes = old_indexes[old_features_mask]
+
+    features = np.vstack((old_features, new_features))
     indexes = np.concatenate((old_indexes, new_indexes))
 
     assert len(features) == len(indexes)
@@ -103,7 +124,57 @@ def match_features(old_features, old_indexes, new_features, index_start):
     return features, indexes
 
 
-def frame_skipper(file, frames_to_skip):
+def choose_old_features(closeness_table, points_to_keep):
+    mask = np.full(closeness_table.shape[0], False)
+    indexes = np.empty([0], dtype=int)
+    table_sum = closeness_table.sum(axis=1)
+
+    base_indexes = np.arange(len(mask))
+
+    # TODO: continue debugging here
+
+    for sum_threshold in range(max(table_sum + 1)):
+        points_to_go = points_to_keep - len(indexes)
+        threshold_mask = table_sum == sum_threshold
+
+        if sum(threshold_mask) <= points_to_go:
+            indexes = np.hstack((indexes, base_indexes[threshold_mask]))
+        else:
+            indexes = np.hstack(
+                (
+                    indexes,
+                    np.random.choice(
+                        base_indexes[threshold_mask],
+                        points_to_go,
+                        replace=False,
+                    ),
+                )
+            )
+
+        assert len(indexes) <= points_to_keep
+
+        if len(indexes) == points_to_keep:
+            mask[indexes] = True
+            break
+
+    return mask
+
+
+def get_close_points_table(new_features, old_features, threshold):
+    old_repeated = np.repeat(
+        old_features, new_features.shape[0], axis=0
+    ).reshape((old_features.shape[0], new_features.shape[0], 2))
+    new_repeated = (
+        np.repeat(new_features, old_features.shape[0], axis=0)
+        .reshape((new_features.shape[0], old_features.shape[0], 2))
+        .transpose((1, 0, 2))
+    )
+    distances = np.linalg.norm(old_repeated - new_repeated, axis=2)
+    close_points = distances < threshold
+    return close_points
+
+
+def frame_getter(file, frames_to_skip):
     while True:
         for _ in range(frames_to_skip + 1):
             ret, color_frame = file.read()
@@ -125,7 +196,7 @@ def get_video(file_path):
 
 
 def display_klt_debug_frame(
-    color_frame, features, prev_features, indexes,
+    color_frame, features, prev_features, indexes, delay
 ):
     mask = np.zeros_like(color_frame)
 
@@ -139,14 +210,18 @@ def display_klt_debug_frame(
             # (prev_x, prev_y),
             tuple(feature),
             tuple(prev_feature),
-            debug_colors[index].tolist(),
+            debug_colors[index % 200].tolist(),
             2,
         )
         color_frame = cv2.circle(
-            color_frame, tuple(feature), 5, debug_colors[index].tolist(), -1,
+            color_frame,
+            tuple(feature),
+            5,
+            debug_colors[index % 200].tolist(),
+            -1,
         )
 
     img = cv2.add(color_frame, mask)
 
     cv2.imshow("frame", img)
-    cv2.waitKey(1)
+    cv2.waitKey(delay)

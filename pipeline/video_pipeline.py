@@ -139,7 +139,8 @@ class VideoPipeline:
                 indexes = [
                     item
                     for item in [
-                        -int(i * (i + 1) / 2 + 1) for i in range(20, -1, -1)
+                        -int(i * (i + 1) / 2 + 1)
+                        for i in range(length - 1, -1, -1)
                     ]
                     if -item <= len(Rs)
                 ]

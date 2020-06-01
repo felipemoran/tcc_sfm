@@ -58,7 +58,7 @@ def five_pt(config, tracks, prev_R, prev_T):
         cameraMatrix=config.camera_matrix,
         method=cv2.RANSAC,
         prob=config.probability,
-        threshold=config.threshold,
+        threshold=config.essential_mat_threshold,
         mask=None,
     )
 

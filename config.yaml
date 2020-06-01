@@ -12,11 +12,13 @@ use_reconstruct_tracks: true
 
 klt:
     display_klt_debug_frames: true
-    frames_to_skip: 2
-    reset_period: 20000
+    klt_debug_frames_delay: 20
+    frames_to_skip: 1
+    reset_period: 1
+    closeness_threshold: 15
+    max_features: 100
 
     corner_selection:
-        max_corners: 100
         quality_level: 0.5
         min_distance: 15
         block_size: 10
@@ -43,19 +45,19 @@ bundle_adjustment: &bundle_adjustment
     rolling_window:
         method: growing_step # constant_step or growing_step
         period: 1 # in number of processed frame
-        length: 10 # number of frames in the window taking step into account
+        length: 5 # number of frames in the window taking step into account
         step: 1 # step=N means taking 1 every N frames
-    use_at_end: false
+    use_at_end: true
 
 five_pt_algorithm: &five_pt_algorithm
     min_number_of_points: 6
-    threshold: 5
+    essential_mat_threshold: 5
     probability: 0.999
     camera_matrix: *camera_matrix
     distance_threshold: 50
 
 solvepnp:
-    min_number_of_points: 10
+    min_number_of_points: 5
     camera_matrix: *camera_matrix
 
 init:
