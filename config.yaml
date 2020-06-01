@@ -39,12 +39,12 @@ klt:
             eps: 0.003
 
 bundle_adjustment: &bundle_adjustment
-    tol: 1e-4
+    tol: 1e-2
     method: "trf"
     verbose: 2
     camera_matrix: *camera_matrix
 
-    use_with_rolling_window: false
+    use_with_rolling_window: true
     rolling_window:
         method: growing_step # constant_step or growing_step
         period: 1 # in number of processed frame
@@ -55,7 +55,9 @@ bundle_adjustment: &bundle_adjustment
 five_pt_algorithm: &five_pt_algorithm
     min_number_of_points: 6
     essential_mat_threshold: 5
-    probability: 0.999
+    ransac_probability: 0.999999
+    refine_matches_repetitions: 1
+    save_optimized_projections: false
     camera_matrix: *camera_matrix
     distance_threshold: 50
 

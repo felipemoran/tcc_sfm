@@ -26,22 +26,21 @@ def five_pt_init(config, Rs, Ts, tracks, masks):
         else:
             Rs, Ts, tracks, masks = Rs[:1], Ts[:1], tracks[-2:], masks[-2:]
 
-    track_pair, pair_mask = utils.get_last_track_pair(tracks, masks)
-
-    R, T, points, bool_mask = five_pt(
-        config.five_pt_algorithm, track_pair, Rs[-1], Ts[-1]
+    R, T, points, index_mask = five_pt(
+        config.five_pt_algorithm, tracks, masks, Rs[-1], Ts[-1]
     )
 
-    points = triangulate(
+    points, index_mask = triangulate(
         config.five_pt_algorithm.camera_matrix,
         R_1=Rs[-1].transpose(),
         T_1=np.matmul(Rs[-1].transpose(), -Ts[-1]),
         R_2=R.transpose(),
         T_2=np.matmul(R.transpose(), -T),
-        tracks=track_pair,
+        tracks=tracks,
+        masks=masks,
     )
 
-    cloud = utils.points_to_cloud(points=points, indexes=pair_mask)
+    cloud = utils.points_to_cloud(points=points, indexes=index_mask)
 
     Rs += [R]
     Ts += [T]

@@ -104,14 +104,11 @@ def get_intersection_mask(a, b):
 
 def get_last_track_pair(tracks, masks):
     pair_mask = get_intersection_mask(masks[-2], masks[-1])
-    track_pair = np.array(
-        [
-            # track[[item in pair_mask for item in mask]]
-            track[np.isin(mask, pair_mask)]
-            for (track, mask) in zip(tracks[-2:], masks[-2:])
-        ],
-        dtype=np.float_,
-    )
+    track_pair = [
+        # track[[item in pair_mask for item in mask]]
+        track[np.isin(mask, pair_mask)]
+        for (track, mask) in zip(tracks[-2:], masks[-2:])
+    ]
     return track_pair, pair_mask
 
 

@@ -73,7 +73,9 @@ class BundleAdjustmentConfig:
 class FivePointAlgorithmConfig:
     min_number_of_points: int
     essential_mat_threshold: float
-    probability: float
+    ransac_probability: float
+    refine_matches_repetitions: int
+    save_optimized_projections: bool
     camera_matrix: Any
     distance_threshold: float
 

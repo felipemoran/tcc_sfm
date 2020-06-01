@@ -10,11 +10,11 @@ def solvepnp(
     # TODO: convert mask type
 
     if R is not None and T is not None:
-        use_extrinsic_gress = True
+        use_extrinsic_guess = True
     else:
-        use_extrinsic_gress = False
+        use_extrinsic_guess = False
 
-    assert use_extrinsic_gress is False or method != cv2.SOLVEPNP_EPNP
+    assert use_extrinsic_guess is False or method != cv2.SOLVEPNP_EPNP
 
     assert not (
         (R is None) ^ (T is None)
@@ -38,7 +38,7 @@ def solvepnp(
         distCoeffs=None,
         rvec=None if R is None else cv2.Rodrigues(R)[0],
         tvec=T,
-        useExtrinsicGuess=use_extrinsic_gress,
+        useExtrinsicGuess=use_extrinsic_guess,
         flags=method,
     )
 
@@ -69,30 +69,31 @@ def solve_epnp(config, track_slice, track_mask, cloud):
     )
 
 
-def five_pt(config, tracks, prev_R, prev_T):
+def five_pt(config, tracks, masks, prev_R, prev_T):
     if len(tracks[0]) < config.min_number_of_points:
         return None, None, None, None
 
+    track_pair, pair_mask = utils.get_last_track_pair(tracks, masks)
+
     # We have no 3D point info so we calculate based on the two cameras
     E, five_pt_mask = cv2.findEssentialMat(
-        points1=tracks[0],
-        points2=tracks[1],
+        points1=track_pair[0],
+        points2=track_pair[1],
         cameraMatrix=config.camera_matrix,
         method=cv2.RANSAC,
-        prob=config.probability,
+        prob=config.ransac_probability,
         threshold=config.essential_mat_threshold,
         mask=None,
     )
 
-    # print(
-    #     f"E: {sum(five_pt_mask.squeeze()):3}/{five_pt_mask.shape[0]:3}",
-    #     end="\t",
-    # )
+    E, five_pt_mask, track_pair = refine_track(
+        E, config, five_pt_mask, masks, pair_mask, track_pair, tracks
+    )
 
     _, R, T, pose_mask, points_4d = cv2.recoverPose(
         E=E,
-        points1=tracks[0],
-        points2=tracks[1],
+        points1=track_pair[0],
+        points2=track_pair[1],
         cameraMatrix=config.camera_matrix,
         distanceThresh=config.distance_threshold,
         mask=five_pt_mask.copy(),
@@ -114,18 +115,46 @@ def five_pt(config, tracks, prev_R, prev_T):
     points_3d = utils.translate_points_to_base_frame(prev_R, prev_T, points_3d)
     R, T = utils.compose_rts(R, T, prev_R, prev_T)
 
-    return R, T, points_3d, final_mask
+    index_mask = pair_mask[final_mask]
+
+    return R, T, points_3d, index_mask
 
 
-def triangulate(camera_matrix, R_1, T_1, R_2, T_2, tracks):
+def refine_track(E, config, five_pt_mask, masks, pair_mask, track_pair, tracks):
+    for _ in range(config.refine_matches_repetitions):
+        F = np.matmul(
+            np.matmul(np.linalg.inv(np.transpose(config.camera_matrix)), E),
+            np.linalg.inv(config.camera_matrix),
+        )
+        new_track_0, new_track_1 = cv2.correctMatches(
+            F, track_pair[0].reshape(1, -1, 2), track_pair[1].reshape(1, -1, 2)
+        )
+
+        new_track_pair = np.array(
+            [new_track_0.reshape(-1, 2), new_track_1.reshape(-1, 2),]
+        )
+
+        E, five_pt_mask = cv2.findEssentialMat(
+            points1=new_track_pair[0],
+            points2=new_track_pair[1],
+            cameraMatrix=config.camera_matrix,
+            method=cv2.RANSAC,
+            prob=config.ransac_probability,
+            threshold=config.ransac_probability,
+        )
+    else:
+        if config.save_optimized_projections:
+            tracks[-2][np.isin(masks[-2], pair_mask)] = new_track_pair[0]
+            tracks[-1][np.isin(masks[-1], pair_mask)] = new_track_pair[1]
+            track_pair = new_track_pair
+    return E, five_pt_mask, track_pair
+
+
+def triangulate(camera_matrix, R_1, T_1, R_2, T_2, tracks, masks):
     if any([R_1 is None, T_1 is None, R_2 is None, T_2 is None,]):
         return None
 
-    assert (
-        tracks.shape[0] == 2
-    ), "Can't do reprojection with {} cameras, 2 are needed".format(
-        tracks.shape[0]
-    )
+    track_pair, pair_mask = utils.get_last_track_pair(tracks, masks)
 
     P1 = np.matmul(camera_matrix, np.hstack((R_1, T_1)))
     P2 = np.matmul(camera_matrix, np.hstack((R_2, T_2)))
@@ -133,31 +162,26 @@ def triangulate(camera_matrix, R_1, T_1, R_2, T_2, tracks):
     points_4d = cv2.triangulatePoints(
         projMatr1=P1,
         projMatr2=P2,
-        projPoints1=tracks[0].transpose(),
-        projPoints2=tracks[1].transpose(),
+        projPoints1=track_pair[0].transpose(),
+        projPoints2=track_pair[1].transpose(),
     )
     points_3d = cv2.convertPointsFromHomogeneous(
         points_4d.transpose()
     ).squeeze()
 
-    return points_3d
+    return points_3d, pair_mask
 
 
 def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
-    track_pair, pair_mask = utils.get_last_track_pair(tracks, masks)
-
-    if len(track_pair) == 1:
+    if len(tracks) == 1:
         return (*utils.init_rt(), None)
-
-    assert len(track_pair) == 2
 
     R, T, points, index_mask = None, None, None, None
 
     if config.use_five_pt_algorithm:
-        R, T, points, bool_mask = five_pt(
-            config.five_pt_algorithm, track_pair, prev_R, prev_T
+        R, T, points, index_mask = five_pt(
+            config.five_pt_algorithm, tracks, masks, prev_R, prev_T
         )
-        index_mask = pair_mask[bool_mask]
 
     if config.use_solve_epnp:
         R, T = solve_epnp(config.solvepnp, tracks[-1], masks[-1], cloud)
@@ -170,15 +194,15 @@ def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
         )
 
     if config.use_reconstruct_tracks:
-        points = triangulate(
+        points, index_mask = triangulate(
             config.camera_matrix,
             R_1=prev_R.transpose(),
             T_1=np.matmul(prev_R.transpose(), -prev_T),
             R_2=R.transpose(),
             T_2=np.matmul(R.transpose(), -T),
-            tracks=track_pair,
+            tracks=tracks,
+            masks=masks,
         )
-        index_mask = pair_mask
 
     return R, T, points, index_mask
 
