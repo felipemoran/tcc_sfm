@@ -118,7 +118,8 @@ class VideoPipelineConfig:
     camera_matrix: Any
 
     use_five_pt_algorithm: bool
-    use_solve_pnp: bool
+    use_solve_epnp: bool
+    use_solve_iterative_pnp: bool
     use_reconstruct_tracks: bool
 
     klt: KLTConfig

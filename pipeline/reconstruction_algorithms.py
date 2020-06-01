@@ -4,13 +4,17 @@ import cv2
 from pipeline import utils
 
 
-def solvepnp(config, track_slice, track_mask, cloud, R=None, T=None):
+def solvepnp(
+    config, track_slice, track_mask, cloud, R=None, T=None, method=None
+):
     # TODO: convert mask type
 
     if R is not None and T is not None:
         use_extrinsic_gress = True
     else:
         use_extrinsic_gress = False
+
+    assert use_extrinsic_gress is False or method != cv2.SOLVEPNP_EPNP
 
     assert not (
         (R is None) ^ (T is None)
@@ -35,7 +39,7 @@ def solvepnp(config, track_slice, track_mask, cloud, R=None, T=None):
         rvec=None if R is None else cv2.Rodrigues(R)[0],
         tvec=T,
         useExtrinsicGuess=use_extrinsic_gress,
-        flags=cv2.SOLVEPNP_ITERATIVE,
+        flags=method,
     )
 
     # convert from camera coordinate base to global
@@ -45,6 +49,24 @@ def solvepnp(config, track_slice, track_mask, cloud, R=None, T=None):
     print()
 
     return R, T
+
+
+def solve_pnp_iterative(config, track_slice, track_mask, cloud, R=None, T=None):
+    return solvepnp(
+        config,
+        track_slice,
+        track_mask,
+        cloud,
+        R,
+        T,
+        method=cv2.SOLVEPNP_ITERATIVE,
+    )
+
+
+def solve_epnp(config, track_slice, track_mask, cloud):
+    return solvepnp(
+        config, track_slice, track_mask, cloud, method=cv2.SOLVEPNP_EPNP,
+    )
 
 
 def five_pt(config, tracks, prev_R, prev_T):
@@ -137,10 +159,15 @@ def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
         )
         index_mask = pair_mask[bool_mask]
 
-    if config.use_solve_pnp:
+    if config.use_solve_epnp:
+        R, T = solve_epnp(config.solvepnp, tracks[-1], masks[-1], cloud)
+
+    if config.use_solve_iterative_pnp:
         # refine R and T based on previous point cloud
         # result is in camera 0's coordinate system
-        R, T = solvepnp(config.solvepnp, tracks[-1], masks[-1], cloud, R, T)
+        R, T = solve_pnp_iterative(
+            config.solvepnp, tracks[-1], masks[-1], cloud, R, T
+        )
 
     if config.use_reconstruct_tracks:
         points = triangulate(

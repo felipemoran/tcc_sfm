@@ -4,10 +4,13 @@ camera_matrix: &camera_matrix [
     [765.16859169, 0.0, 379.11876567],
     [0.0, 762.38664643, 497.22086655],
     [0.0, 0.0, 1.0],
-  ]
+]
 
 use_five_pt_algorithm: true
-use_solve_pnp: true
+
+use_solve_epnp: true
+use_solve_iterative_pnp: true
+
 use_reconstruct_tracks: true
 
 klt:
