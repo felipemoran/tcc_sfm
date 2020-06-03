@@ -95,12 +95,28 @@ class SolvePnPConfig:
 @dataclass
 class FivePointInitConfig:
     five_pt_algorithm: FivePointAlgorithmConfig
-    first_frame_fixed: bool
     use_bundle_adjustment: bool
     bundle_adjustment: Union[BundleAdjustmentConfig, None]
 
     def __post_init__(self):
-        assert self.use_bundle_adjustment and self.bundle_adjustment is not None
+        assert not (
+            self.use_bundle_adjustment
+            and not (self.bundle_adjustment is not None)
+        )
+
+
+@dataclass
+class ThreeFrameInitConfig:
+    five_pt_algorithm: FivePointAlgorithmConfig
+    solve_pnp: SolvePnPConfig
+    use_bundle_adjustment: bool
+    bundle_adjustment: Union[BundleAdjustmentConfig, None]
+
+    def __post_init__(self):
+        assert not (
+            self.use_bundle_adjustment
+            and not (self.bundle_adjustment is not None)
+        )
 
 
 @dataclass
@@ -110,6 +126,7 @@ class InitConfig:
     camera_matrix: Any
 
     five_pt: FivePointInitConfig
+    three_frame: ThreeFrameInitConfig
 
     def __post_init__(self):
         self.camera_matrix = np.array(self.camera_matrix)
@@ -129,7 +146,7 @@ class VideoPipelineConfig:
     init: InitConfig
 
     five_pt_algorithm: FivePointAlgorithmConfig
-    solvepnp: SolvePnPConfig
+    solve_pnp: SolvePnPConfig
 
     bundle_adjustment: BundleAdjustmentConfig
 

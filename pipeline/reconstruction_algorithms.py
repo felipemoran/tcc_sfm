@@ -7,8 +7,6 @@ from pipeline import utils
 def solvepnp(
     config, track_slice, track_mask, cloud, R=None, T=None, method=None
 ):
-    # TODO: convert mask type
-
     if R is not None and T is not None:
         use_extrinsic_guess = True
     else:
@@ -31,7 +29,7 @@ def solvepnp(
     # go back to camera's reference frame
     R, T = utils.invert_reference_frame(R, T)
 
-    return_value, R, T = cv2.solvePnP(
+    return_value, r_vec, t_vec = cv2.solvePnP(
         objectPoints=cloud[intersection_mask],
         imagePoints=track_slice[track_bool_mask],
         cameraMatrix=config.camera_matrix,
@@ -43,10 +41,8 @@ def solvepnp(
     )
 
     # convert from camera coordinate base to global
-    R = cv2.Rodrigues(R)[0].transpose()
-    T = np.matmul(R, -T)
-
-    print()
+    R = cv2.Rodrigues(r_vec)[0]
+    R, T = utils.invert_reference_frame(R, t_vec)
 
     return R, T
 
@@ -184,13 +180,13 @@ def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
         )
 
     if config.use_solve_epnp:
-        R, T = solve_epnp(config.solvepnp, tracks[-1], masks[-1], cloud)
+        R, T = solve_epnp(config.solve_pnp, tracks[-1], masks[-1], cloud)
 
     if config.use_solve_iterative_pnp:
         # refine R and T based on previous point cloud
         # result is in camera 0's coordinate system
         R, T = solve_pnp_iterative(
-            config.solvepnp, tracks[-1], masks[-1], cloud, R, T
+            config.solve_pnp, tracks[-1], masks[-1], cloud, R, T
         )
 
     if config.use_reconstruct_tracks:
@@ -208,19 +204,14 @@ def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
 
 
 def calculate_projection_error(camera_matrix, Rs, Ts, cloud, tracks, masks):
-    # TODO: convert mask type
-
     if cloud is None:
         return float("inf")
 
     cloud_mask = utils.get_not_nan_index_mask(cloud)
     error = 0
 
-    for index, (R, T, original_track, track_mask) in enumerate(
-        zip(Rs, Ts, tracks, masks)
-    ):
+    for R, T, original_track, track_mask in zip(Rs, Ts, tracks, masks):
         intersection_mask = utils.get_intersection_mask(cloud_mask, track_mask)
-        # track_bool_mask = [item in intersection_mask for item in track_mask]
         track_bool_mask = np.isin(track_mask, intersection_mask)
 
         R_cam, T_cam = utils.invert_reference_frame(R, T)
@@ -233,4 +224,4 @@ def calculate_projection_error(camera_matrix, Rs, Ts, cloud, tracks, masks):
         delta = original_track[track_bool_mask] - projection_track
         error += np.linalg.norm(delta, axis=1).mean()
 
-    return error / (index + 1)
+    return error / len(tracks)

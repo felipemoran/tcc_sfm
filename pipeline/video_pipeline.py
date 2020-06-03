@@ -40,7 +40,7 @@ class VideoPipeline:
             track_generator, Rs, Ts, cloud, tracks, masks
         )
 
-        utils.visualize(self.config.camera_matrix, Rs, Ts, cloud)
+        return self.config.camera_matrix, Rs, Ts, cloud
 
     def _init_reconstruction(self, track_generator):
         config = self.config.init
@@ -51,9 +51,7 @@ class VideoPipeline:
         tracks = []
         masks = []
 
-        for track_index, (track_slice, index_mask) in enumerate(
-            track_generator
-        ):
+        for index, (track_slice, index_mask) in enumerate(track_generator):
             tracks += [track_slice]
             masks += [index_mask]
 
@@ -61,17 +59,18 @@ class VideoPipeline:
                 Rs, Ts, cloud, tracks, masks = five_pt_init(
                     config.five_pt, Rs, Ts, tracks, masks
                 )
-            elif config.method == "three_frame_combo":
-                Rs, Ts, cloud, tracks = three_frame_init(
-                    Rs, Ts, cloud, tracks, masks
+
+                error = calculate_projection_error(
+                    config.camera_matrix, Rs, Ts, cloud, tracks, masks
+                )
+            elif config.method == "three_frame_algorithm":
+                Rs, Ts, cloud, tracks, masks, error = three_frame_init(
+                    config.three_frame, tracks, masks
                 )
             else:
                 raise ValueError
 
-            error = calculate_projection_error(
-                config.camera_matrix, Rs, Ts, cloud, tracks, masks
-            )
-            print(f"Error: {error}")
+            print(f"Frame: {index}, Error: {error}")
 
             if error < config.error_threshold:
                 return Rs, Ts, cloud, tracks, masks
@@ -185,6 +184,8 @@ if __name__ == "__main__":
     sfm = VideoPipeline(
         display_klt_debug_frames=args.display_klt_debug_frames, config=config
     )
-    sfm.run(args.dir)
+    camera_matrix, Rs, Ts, cloud = sfm.run(args.dir)
     elapsed = time.time() - start
     print("Elapsed {}".format(elapsed))
+
+    utils.visualize(camera_matrix, Rs, Ts, cloud)

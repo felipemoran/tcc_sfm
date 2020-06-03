@@ -14,7 +14,7 @@ use_solve_iterative_pnp: true
 use_reconstruct_tracks: true
 
 klt:
-    display_klt_debug_frames: true
+    display_klt_debug_frames: false
     klt_debug_frames_delay: 20
     frames_to_skip: 1
     reset_period: 1
@@ -61,16 +61,23 @@ five_pt_algorithm: &five_pt_algorithm
     camera_matrix: *camera_matrix
     distance_threshold: 50
 
-solvepnp:
+solve_pnp: &solve_pnp
     min_number_of_points: 5
     camera_matrix: *camera_matrix
 
 init:
-    method: five_pt_algorithm
-    error_threshold: 0.2
+#    method: five_pt_algorithm
+    method: three_frame_algorithm
+    error_threshold: 0.05
     five_pt:
         five_pt_algorithm: *five_pt_algorithm
-        first_frame_fixed: false
         use_bundle_adjustment: true
         bundle_adjustment: *bundle_adjustment
+    three_frame:
+        five_pt_algorithm: *five_pt_algorithm
+        num_pnp_frames: 1
+        solve_pnp: *solve_pnp
+        use_bundle_adjustment: false
+        bundle_adjustment: *bundle_adjustment
+
     camera_matrix: *camera_matrix
