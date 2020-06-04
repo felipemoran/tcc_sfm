@@ -185,7 +185,7 @@ def frame_getter(file, frames_to_skip):
 
 
 def get_video(file_path):
-    print("Looking for files in {}".format(dir))
+    # print("Looking for files in {}".format(dir))
 
     assert path.isfile(file_path), "Invalid file location"
 

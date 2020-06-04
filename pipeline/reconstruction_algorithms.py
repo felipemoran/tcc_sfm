@@ -4,7 +4,7 @@ import cv2
 from pipeline import utils
 
 
-def solvepnp(
+def _solve_pnp(
     config, track_slice, track_mask, cloud, R=None, T=None, method=None
 ):
     if R is not None and T is not None:
@@ -47,22 +47,18 @@ def solvepnp(
     return R, T
 
 
-def solve_pnp_iterative(config, track_slice, track_mask, cloud, R=None, T=None):
-    return solvepnp(
-        config,
-        track_slice,
-        track_mask,
-        cloud,
-        R,
-        T,
-        method=cv2.SOLVEPNP_ITERATIVE,
-    )
+def solve_pnp(config, track, mask, cloud, R=None, T=None):
+    if config.use_epnp:
+        R, T = _solve_pnp(config, track, mask, cloud, method=cv2.SOLVEPNP_EPNP,)
 
+    if config.use_iterative_pnp:
+        # refine R and T based on previous point cloud
+        # result is in camera 0's coordinate system
+        R, T = _solve_pnp(
+            config, track, mask, cloud, R, T, method=cv2.SOLVEPNP_ITERATIVE,
+        )
 
-def solve_epnp(config, track_slice, track_mask, cloud):
-    return solvepnp(
-        config, track_slice, track_mask, cloud, method=cv2.SOLVEPNP_EPNP,
-    )
+    return R, T
 
 
 def five_pt(config, tracks, masks, prev_R, prev_T):
@@ -169,28 +165,20 @@ def triangulate(camera_matrix, R_1, T_1, R_2, T_2, tracks, masks):
 
 
 def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
-    if len(tracks) == 1:
-        return (*utils.init_rt(), None)
+    assert len(tracks) > 1
 
-    R, T, points, index_mask = None, None, None, None
+    R, T, points, indexes = None, None, None, None
 
     if config.use_five_pt_algorithm:
-        R, T, points, index_mask = five_pt(
+        R, T, points, indexes = five_pt(
             config.five_pt_algorithm, tracks, masks, prev_R, prev_T
         )
 
-    if config.use_solve_epnp:
-        R, T = solve_epnp(config.solve_pnp, tracks[-1], masks[-1], cloud)
-
-    if config.use_solve_iterative_pnp:
-        # refine R and T based on previous point cloud
-        # result is in camera 0's coordinate system
-        R, T = solve_pnp_iterative(
-            config.solve_pnp, tracks[-1], masks[-1], cloud, R, T
-        )
+    if config.use_solve_pnp:
+        R, T = solve_pnp(config.solve_pnp, tracks[-1], masks[-1], cloud, R, T)
 
     if config.use_reconstruct_tracks:
-        points, index_mask = triangulate(
+        points, indexes = triangulate(
             config.camera_matrix,
             R_1=prev_R.transpose(),
             T_1=np.matmul(prev_R.transpose(), -prev_T),
@@ -200,15 +188,15 @@ def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
             masks=masks,
         )
 
-    return R, T, points, index_mask
+    return R, T, points, indexes
 
 
-def calculate_projection_error(camera_matrix, Rs, Ts, cloud, tracks, masks):
+def calculate_projection_errors(camera_matrix, Rs, Ts, cloud, tracks, masks):
     if cloud is None:
         return float("inf")
 
     cloud_mask = utils.get_not_nan_index_mask(cloud)
-    error = 0
+    errors = []
 
     for R, T, original_track, track_mask in zip(Rs, Ts, tracks, masks):
         intersection_mask = utils.get_intersection_mask(cloud_mask, track_mask)
@@ -222,6 +210,6 @@ def calculate_projection_error(camera_matrix, Rs, Ts, cloud, tracks, masks):
         )[0].squeeze()
 
         delta = original_track[track_bool_mask] - projection_track
-        error += np.linalg.norm(delta, axis=1).mean()
+        errors += [np.linalg.norm(delta, axis=1)]
 
-    return error / len(tracks)
+    return errors

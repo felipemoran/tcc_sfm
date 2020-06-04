@@ -87,49 +87,45 @@ class FivePointAlgorithmConfig:
 class SolvePnPConfig:
     min_number_of_points: int
     camera_matrix: Any
+    use_epnp: bool
+    use_iterative_pnp: bool
 
     def __post_init__(self):
         self.camera_matrix = np.array(self.camera_matrix)
 
 
-@dataclass
-class FivePointInitConfig:
-    five_pt_algorithm: FivePointAlgorithmConfig
-    use_bundle_adjustment: bool
-    bundle_adjustment: Union[BundleAdjustmentConfig, None]
-
-    def __post_init__(self):
-        assert not (
-            self.use_bundle_adjustment
-            and not (self.bundle_adjustment is not None)
-        )
-
-
-@dataclass
-class ThreeFrameInitConfig:
-    five_pt_algorithm: FivePointAlgorithmConfig
-    solve_pnp: SolvePnPConfig
-    use_bundle_adjustment: bool
-    bundle_adjustment: Union[BundleAdjustmentConfig, None]
-
-    def __post_init__(self):
-        assert not (
-            self.use_bundle_adjustment
-            and not (self.bundle_adjustment is not None)
-        )
+# @dataclass
+# class FivePointInitConfig:
+#     five_pt_algorithm: FivePointAlgorithmConfig
+#     use_bundle_adjustment: bool
+#     bundle_adjustment: Union[BundleAdjustmentConfig, None]
+#
+#     def __post_init__(self):
+#         assert not (
+#             self.use_bundle_adjustment
+#             and not (self.bundle_adjustment is not None)
+#         )
+#
+#
+# @dataclass
+# class ThreeFrameInitConfig:
+#     five_pt_algorithm: FivePointAlgorithmConfig
+#     solve_pnp: SolvePnPConfig
+#     use_bundle_adjustment: bool
+#     bundle_adjustment: Union[BundleAdjustmentConfig, None]
+#
+#     def __post_init__(self):
+#         assert not (
+#             self.use_bundle_adjustment
+#             and not (self.bundle_adjustment is not None)
+#         )
 
 
 @dataclass
 class InitConfig:
-    method: str
     error_threshold: float
-    camera_matrix: Any
-
-    five_pt: FivePointInitConfig
-    three_frame: ThreeFrameInitConfig
-
-    def __post_init__(self):
-        self.camera_matrix = np.array(self.camera_matrix)
+    num_reconstruction_frames: int
+    num_error_calculation_frames: int
 
 
 @dataclass
@@ -137,8 +133,7 @@ class VideoPipelineConfig:
     camera_matrix: Any
 
     use_five_pt_algorithm: bool
-    use_solve_epnp: bool
-    use_solve_iterative_pnp: bool
+    use_solve_pnp: bool
     use_reconstruct_tracks: bool
 
     klt: KLTConfig

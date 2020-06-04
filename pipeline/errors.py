@@ -1,0 +1,2 @@
+class EndOfFileError(Exception):
+    pass

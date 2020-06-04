@@ -1,4 +1,7 @@
 import argparse
+import itertools
+from itertools import product
+
 import numpy as np
 import time
 import dacite
@@ -8,12 +11,14 @@ from operator import itemgetter
 from ruamel.yaml import YAML
 from pipeline import utils
 from pipeline import bundle_adjustment
+from pipeline.errors import EndOfFileError
 from pipeline.reconstruction_algorithms import (
     calculate_projection,
-    calculate_projection_error,
+    calculate_projection_errors,
+    solve_pnp,
 )
 from pipeline.video_algorithms import get_video, klt_generator
-from pipeline.init_algorithms import five_pt_init, three_frame_init
+from pipeline.init_algorithms import five_pt_init
 from pipeline.config import VideoPipelineConfig
 
 
@@ -32,11 +37,16 @@ class VideoPipeline:
         file, _ = get_video(dir)
         track_generator = klt_generator(self.config.klt, file)
 
-        Rs, Ts, cloud, tracks, masks = self._init_reconstruction(
-            track_generator
-        )
+        (
+            Rs,
+            Ts,
+            cloud,
+            tracks,
+            masks,
+            track_generator,
+        ) = self._init_reconstruction(track_generator)
 
-        Rs, Ts, cloud, tracks = self._reconstruct(
+        Rs, Ts, cloud, tracks, masks = self._reconstruct(
             track_generator, Rs, Ts, cloud, tracks, masks
         )
 
@@ -45,43 +55,83 @@ class VideoPipeline:
     def _init_reconstruction(self, track_generator):
         config = self.config.init
 
-        Rs = []
-        Ts = []
-        cloud = None
         tracks = []
         masks = []
 
-        for index, (track_slice, index_mask) in enumerate(track_generator):
+        dropped_tracks = 0
+
+        for index, (track_slice, mask) in enumerate(track_generator):
             tracks += [track_slice]
-            masks += [index_mask]
+            masks += [mask]
 
-            if config.method == "five_pt_algorithm":
-                Rs, Ts, cloud, tracks, masks = five_pt_init(
-                    config.five_pt, Rs, Ts, tracks, masks
-                )
+            if (
+                len(tracks)
+                < config.num_reconstruction_frames
+                + config.num_error_calculation_frames
+            ):
+                continue
 
-                error = calculate_projection_error(
-                    config.camera_matrix, Rs, Ts, cloud, tracks, masks
+            # TODO: call full reconstruction with K frames
+            Rs, Ts, cloud, rec_tracks, rec_masks = self._reconstruct(
+                zip(
+                    tracks[: config.num_reconstruction_frames],
+                    masks[: config.num_reconstruction_frames],
                 )
-            elif config.method == "three_frame_algorithm":
-                Rs, Ts, cloud, tracks, masks, error = three_frame_init(
-                    config.three_frame, tracks, masks
-                )
+            )
+
+            # TODO: call error calculation with reconstruction and P frames
+            error, err_tracks, err_masks = self._calculate_error(
+                zip(
+                    tracks[-config.num_error_calculation_frames :],
+                    masks[-config.num_error_calculation_frames :],
+                ),
+                Rs,
+                Ts,
+                cloud,
+            )
+
+            print(
+                f"{config.num_reconstruction_frames},"
+                f"{config.num_error_calculation_frames},"
+                f"{dropped_tracks},"
+                f"{error}"
+            )
+
+            # exit init or or drop first track/mask
+            if error > config.error_threshold:
+                # drop first track ank mask and rerun the process
+                tracks.pop(0)
+                masks.pop(0)
+                dropped_tracks += 1
             else:
-                raise ValueError
+                # add tracks used for error calculation back to track generator
+                track_generator = itertools.chain(
+                    zip(err_tracks, err_masks), track_generator
+                )
 
-            print(f"Frame: {index}, Error: {error}")
-
-            if error < config.error_threshold:
-                return Rs, Ts, cloud, tracks, masks
+                return Rs, Ts, cloud, rec_tracks, rec_masks, track_generator
         else:
-            raise Exception("Not enough frames for init phase")
+            raise EndOfFileError("Not enough frames for init phase")
 
-    def _reconstruct(self, track_generator, Rs, Ts, cloud, tracks, masks):
+    def _reconstruct(
+        self,
+        track_generator,
+        Rs=None,
+        Ts=None,
+        cloud=None,
+        tracks=None,
+        masks=None,
+    ):
+        if tracks is None:
+            tracks, masks = [], []
+
         for index, (track_slice, index_mask) in enumerate(track_generator):
-
             tracks += [track_slice]
             masks += [index_mask]
+
+            if cloud is None:
+                Rs, Ts, cloud = five_pt_init(self.config, tracks, masks)
+                continue
 
             R, T, points, index_mask = calculate_projection(
                 self.config, tracks, masks, Rs[-1], Ts[-1], cloud
@@ -98,7 +148,30 @@ class VideoPipeline:
         else:
             Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks, masks, True)
 
-        return Rs, Ts, cloud, tracks
+        return Rs, Ts, cloud, tracks, masks
+
+    def _calculate_error(
+        self, track_generator, Rs, Ts, cloud,
+    ):
+        errors, Rs, Ts, tracks, masks = [], [], [], [], []
+
+        for index, (track, mask) in enumerate(track_generator):
+            tracks += [track]
+            masks += [mask]
+
+            R, T = solve_pnp(config.solve_pnp, track, mask, cloud)
+            Rs += [R]
+            Ts += [T]
+
+        errors = calculate_projection_errors(
+            self.config.camera_matrix, Rs, Ts, cloud, tracks, masks
+        )
+
+        mean_error = np.array(
+            [frame_errors.mean() for frame_errors in errors]
+        ).mean()
+
+        return mean_error, tracks, masks
 
     def _run_ba(self, Rs, Ts, cloud, tracks, masks, final_frame=False):
         # TODO: convert mask type
@@ -181,10 +254,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     start = time.time()
-    sfm = VideoPipeline(
-        display_klt_debug_frames=args.display_klt_debug_frames, config=config
-    )
-    camera_matrix, Rs, Ts, cloud = sfm.run(args.dir)
+    for num_rec_frames, num_err_frames in product(
+        range(2, 11), [1, 2, 4, 8, 16]
+    ):
+        config.init.num_reconstruction_frames = num_rec_frames
+        config.init.num_error_calculation_frames = num_err_frames
+        sfm = VideoPipeline(
+            display_klt_debug_frames=args.display_klt_debug_frames,
+            config=config,
+        )
+        try:
+            camera_matrix, Rs, Ts, cloud = sfm.run(args.dir)
+        except EndOfFileError:
+            pass
     elapsed = time.time() - start
     print("Elapsed {}".format(elapsed))
 
