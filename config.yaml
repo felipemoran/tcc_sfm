@@ -67,9 +67,9 @@ solve_pnp: &solve_pnp
 
 init:
 #    method: five_pt_algorithm
-    error_threshold: 0.0
+    error_threshold: 1
     num_reconstruction_frames: 2
-    num_error_calculation_frames: 8
+    num_error_calculation_frames: 4
 
 
 #    five_pt:

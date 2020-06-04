@@ -253,21 +253,28 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    # for num_rec_frames, num_err_frames in product(
+    #     range(2, 11), [1, 2, 4, 8, 16]
+    # ):
+    #     config.init.num_reconstruction_frames = num_rec_frames
+    #     config.init.num_error_calculation_frames = num_err_frames
+    #     sfm = VideoPipeline(
+    #         display_klt_debug_frames=args.display_klt_debug_frames,
+    #         config=config,
+    #     )
+    #     try:
+    #         camera_matrix, Rs, Ts, cloud = sfm.run(args.dir)
+    #     except EndOfFileError:
+    #         pass
+
     start = time.time()
-    for num_rec_frames, num_err_frames in product(
-        range(2, 11), [1, 2, 4, 8, 16]
-    ):
-        config.init.num_reconstruction_frames = num_rec_frames
-        config.init.num_error_calculation_frames = num_err_frames
-        sfm = VideoPipeline(
-            display_klt_debug_frames=args.display_klt_debug_frames,
-            config=config,
-        )
-        try:
-            camera_matrix, Rs, Ts, cloud = sfm.run(args.dir)
-        except EndOfFileError:
-            pass
+
+    sfm = VideoPipeline(
+        display_klt_debug_frames=args.display_klt_debug_frames, config=config,
+    )
+    camera_matrix, Rs, Ts, cloud = sfm.run(args.dir)
+
     elapsed = time.time() - start
     print("Elapsed {}".format(elapsed))
 
-    utils.visualize(camera_matrix, Rs, Ts, cloud)
+    utils.visualize(config.camera_matrix, Rs, Ts, cloud)
