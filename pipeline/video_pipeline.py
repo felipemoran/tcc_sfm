@@ -59,7 +59,7 @@ class VideoPipeline:
         masks = []
 
         dropped_tracks = 0
-
+6
         for index, (track_slice, mask) in enumerate(track_generator):
             tracks += [track_slice]
             masks += [mask]

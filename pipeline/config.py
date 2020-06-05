@@ -35,6 +35,7 @@ class OpticalFlowConfig:
 
 @dataclass
 class KLTConfig:
+    calculate_every_frame: bool
     display_klt_debug_frames: bool
     klt_debug_frames_delay: int
     frames_to_skip: int

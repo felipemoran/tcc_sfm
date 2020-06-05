@@ -17,15 +17,24 @@ def klt_generator(config, file):
     indexes = np.empty((0,))
     start_index = 100
 
+    if config.calculate_every_frame:
+        reset_period = config.reset_period * (config.frames_to_skip + 1)
+        skip_at_getter = 0
+        yield_period = config.frames_to_skip + 1
+    else:
+        reset_period = config.reset_period
+        skip_at_getter = config.frames_to_skip
+        yield_period = 1
+
     for counter, (color_frame, bw_frame) in enumerate(
-        frame_getter(file, config.frames_to_skip)
+        frame_getter(file, skip_at_getter)
     ):
         if prev_frame is not None:
             features, indexes = track_features(
                 bw_frame, config, indexes, prev_features, prev_frame
             )
 
-        if reset_features or counter % config.reset_period == 0:
+        if reset_features or counter % reset_period == 0:
             reset_features = False
 
             features, indexes = get_new_features(
@@ -33,7 +42,9 @@ def klt_generator(config, file):
             )
             start_index = max(indexes) + 1
 
-        yield features, indexes
+        if counter % yield_period == 0:
+            yield features, indexes
+
         prev_frame, prev_features = bw_frame, features
 
         if config.display_klt_debug_frames:
@@ -54,7 +65,7 @@ def get_new_features(bw_frame, config, features, indexes, start_index):
         minDistance=config.corner_selection.min_distance,
         mask=None,
         blockSize=config.corner_selection.block_size,
-    ).squeeze()
+    ).reshape((-1, 2))
     features, indexes = match_features(
         features,
         indexes,
