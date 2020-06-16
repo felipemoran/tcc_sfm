@@ -8,6 +8,14 @@ TYPE_POINT = 2
 
 
 def write_to_viz_file(camera_matrix, Rs, Ts, points):
+    """
+    Writes input information as a properly formatted csv file for visualization
+
+    :param camera_matrix: calibration matrix
+    :param Rs: list of R matrices
+    :param Ts: list of T vectors
+    :param points: point cloud with N points as a ndarray with shape Nx3
+    """
     # IMPORTANT: Rs and ts must be in the global coordinate system
 
     with open("out/viz_data.csv", "w") as out_file:
@@ -41,6 +49,9 @@ def write_to_viz_file(camera_matrix, Rs, Ts, points):
 
 
 def call_viz():
+    """
+    Call visualizes with default csv file location
+    """
     os.system(
         os.path.join(
             os.getcwd(), "visualizer", "cmake-build-debug", "visualizer"
@@ -51,58 +62,122 @@ def call_viz():
 
 
 def visualize(camera_matrix, Rs, Ts, points):
+    """
+    Bundles together visualization file creation and visualizer call
+
+    :param camera_matrix: calibration matrix
+    :param Rs: list of R matrices
+    :param Ts: list of T vectors
+    :param points: point cloud with N points as a ndarray with shape Nx3
+    """
     write_to_viz_file(camera_matrix, Rs, Ts, points)
     call_viz()
 
 
-def progress_bar(realized, total, length=20):
-    assert 0 <= realized <= total
-
-    rep = int(round(length * realized / total))
-    return "{:2} / {:2}  {:2}".format(
-        realized, total, "#" * rep + "_" * (length - rep)
-    )
-
-
 def compose_rts(rel_R, rel_T, comp_R, comp_T):
+    """
+    Porperly composes two sets of rotation matrices and translation vectors
+
+    :param rel_R: rotation matrix of new camera
+    :param rel_T: translation vector of new camera
+    :param comp_R: rotation matrix of previous camera
+    :param comp_T: translation vector of previous camera
+    :return: composed rotation matrix and translation vector
+    """
     res_T = comp_T + np.matmul(comp_R, rel_T)
     res_R = np.matmul(comp_R, rel_R)
     return res_R, res_T
 
 
 def translate_points_to_base_frame(comp_R, comp_T, points):
+    """
+    Convert point from local reference frame to global's
+    :param comp_R: camera's rotation matrix in the global reference frame
+    :param comp_T: camera's translation vector in the global reference frame
+    :param points: points to be converted
+    :return: point coordinates in the global reference frame
+    """
     return (comp_T + np.matmul(comp_R, points.transpose())).transpose()
 
 
 def get_nan_bool_mask(input_array):
+    """
+    Creates mask of booleans indicating which values are Nan/None
+
+    :param input_array: feature track or point cloud
+    :return: bool mask
+    """
     return (np.isnan(input_array)).any(axis=1)
 
 
 def get_nan_index_mask(input_array):
+    """
+    Creates mask with the indexes of elements that are Nan/None.
+
+    :param input_array: feature track or point cloud
+    :return: index mask
+    """
     nan_bool_mask = get_nan_bool_mask(input_array)
     return np.arange(len(input_array))[nan_bool_mask]
 
 
 def get_not_nan_index_mask(input_array):
+    """
+    Creates mask with the indexes of elements that are not Nan/None.
+
+    :param input_array: feature track or point cloud
+    :return: index mask
+    """
+
     not_nan_bool_mask = ~get_nan_bool_mask(input_array)
     return np.arange(len(input_array))[not_nan_bool_mask]
 
 
 def invert_reference_frame(R, T):
+    """
+    Inverts rotation matrix and translation vector
+
+    :param R: rotation matrix
+    :param T: translation vector
+    :return: inverted R and T
+    """
     if R is None:
         return T, R
     return R.transpose(), np.matmul(R.transpose(), -T)
 
 
 def init_rt():
+    """
+    Creates initial rotation matrix and translation vector
+
+    :return: 3x3 identity matix and vector of zeros of shape 3x1
+    """
     return np.eye(3), np.zeros((3, 1), dtype=np.float_)
 
 
 def get_intersection_mask(a, b):
+    """
+    Calculates the intersection of two index returning only those that are present in both
+    vectors a nd b
+
+    :param a: index vector a
+    :param b: index vector b
+    :return: intesection between a and b
+    """
     return np.intersect1d(a, b)
 
 
 def get_last_track_pair(tracks, masks):
+    """
+    Forms a track pair with the last two track slices.
+
+    This formed pair consists of all the features that are present in both traacks.
+
+    :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+    :param masks: list of index masks for each feature vector. Indexes refer to the position of
+    the item in the cloud
+    :return: track pair and pair index mask in the same structure as tracks and masks
+    """
     pair_mask = get_intersection_mask(masks[-2], masks[-1])
     track_pair = [
         # track[[item in pair_mask for item in mask]]
@@ -113,14 +188,29 @@ def get_last_track_pair(tracks, masks):
 
 
 def points_to_cloud(points, indexes):
+    """
+    Creates a cloud of points from a set of sparse 3D points and indexes
+
+    :param points: point cloud with N points as a ndarray with shape Nx3
+    :param indexes: list of index masks for each feature vector. Indexes refer to the position
+    of the item in the cloud
+    :return: point cloud
+    """
     cloud = np.full((max(indexes) + 1, 3), None, dtype=np.float_)
     cloud[indexes] = points
     return cloud
 
 
 def add_points_to_cloud(cloud, points, index_mask):
-    # if cloud is None:
-    #     cloud = np.full((max(index_mask) * 2, 3), None, dtype=np.float_)
+    """
+    Adds new points from 'points' to the cloud
+
+    :param cloud: point cloud with N points as a ndarray with shape Nx3
+    :param points: calculated 3D points from a given set of frames
+    :param index_mask: vector with corresponding indexes for each point in points
+    :return:
+    """
+
     assert cloud is not None
 
     cloud_mask = get_not_nan_index_mask(cloud)

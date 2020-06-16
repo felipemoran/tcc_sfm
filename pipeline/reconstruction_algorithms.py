@@ -7,6 +7,22 @@ from pipeline import utils
 def _solve_pnp(
     config, track_slice, track_mask, cloud, R=None, T=None, method=None
 ):
+    """
+    Adaptation of the SolvePnP algorithm for a new track slice (frame) and existing point cloud.
+
+    It calculates the new frame's rotation matrix and translation vector based on an existing
+    point cloud. If the method to be used is SOLVEPNP_ITERATIVE an initial guess of R and T can
+    also be supplied
+
+    :param config: config object. See config.py for more information
+    :param track_slice: 2 column matrix with 2D features
+    :param track_mask: point cloud indexes for features in the track slice
+    :param cloud: point cloud with N points as a ndarray with shape Nx3
+    :param R: rotation matrix seed
+    :param T: translation vector seed
+    :param method: method to be used in the algorithm
+    :return: new frame's rotation matrix and translation vector
+    """
     if R is not None and T is not None:
         use_extrinsic_guess = True
     else:
@@ -48,6 +64,18 @@ def _solve_pnp(
 
 
 def solve_pnp(config, track, mask, cloud, R=None, T=None):
+    """
+    Wrapper for _solve_pnp where the method is chosen automatically
+
+    :param config: config object. See config.py for more information
+    :param track_slice: 2 column matrix with 2D features
+    :param track_mask: point cloud indexes for features in the track slice
+    :param cloud: point cloud with N points as a ndarray with shape Nx3
+    :param R: rotation matrix seed
+    :param T: translation vector seed
+    :param method: method to be used in the algorithm
+    :return: new frame's rotation matrix and translation vector
+    """
     if config.use_epnp:
         R, T = _solve_pnp(config, track, mask, cloud, method=cv2.SOLVEPNP_EPNP,)
 
@@ -62,6 +90,20 @@ def solve_pnp(config, track, mask, cloud, R=None, T=None):
 
 
 def five_pt(config, tracks, masks, prev_R, prev_T):
+    """
+    Adaptation of five point routine.
+
+    It first calculates the relative movement of camreta 2 in respect of camera 1 applying the
+    necessary masks, then converts the result to camera 1 reference frame, which can be the
+    camera 1's reference frame relative to camera 0's or global's
+
+    :param config: config object. See config.py for more information
+    :param track_slice: 2 column matrix with 2D features
+    :param track_mask: point cloud indexes for features in the track slice
+    :param prev_R: camera 1's rotation matrix
+    :param prev_T: camera 1's translation matrix
+    :return: rotation and translation of new camera and calculated 3D points with their indexes
+    """
     if len(tracks[0]) < config.min_number_of_points:
         return None, None, None, None
 
@@ -113,6 +155,19 @@ def five_pt(config, tracks, masks, prev_R, prev_T):
 
 
 def refine_track(E, config, five_pt_mask, masks, pair_mask, track_pair, tracks):
+    """
+    Refines a track (vector of features) by imposing some epipolar constraints
+
+    :param E: essential matrix
+    :param config: config object. See config.py for more information
+    :param five_pt_mask: binary mask for points kept after 5 pt algorithm
+    :param masks: original track masks containing list of index masks for each feature vector.
+    Indexes refer to the position of the item in the cloud
+    :param pair_mask: combined mask for pair of tracks
+    :param track_pair: list of 2D feature vectors where each feature is present in both tracks
+    :param tracks: original tracks of features
+    :return: refined essential matrix, five pt mask and track pair
+    """
     for _ in range(config.refine_matches_repetitions):
         F = np.matmul(
             np.matmul(np.linalg.inv(np.transpose(config.camera_matrix)), E),
@@ -143,6 +198,19 @@ def refine_track(E, config, five_pt_mask, masks, pair_mask, track_pair, tracks):
 
 
 def triangulate(camera_matrix, R_1, T_1, R_2, T_2, tracks, masks):
+    """
+    Calculates features' 3D locations based on their 2D projections and rotation matrices and
+    translation vectors of both cameras
+
+    :param camera_matrix: calibration matrix
+    :param R_1: rotation matrix of camera 1
+    :param T_1: translation vector of camamera 1
+    :param R_2: rotation matrix of camera 2
+    :param T_2: translation vector of camamera 2
+    :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+    :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+    :return: calculated 3D points and their indexes
+    """
     if any([R_1 is None, T_1 is None, R_2 is None, T_2 is None,]):
         return None
 
@@ -165,6 +233,18 @@ def triangulate(camera_matrix, R_1, T_1, R_2, T_2, tracks, masks):
 
 
 def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
+    """
+    Bundle up toguether above algorithms for the calculation of a camera's postion in space and
+    3D position of detected features
+
+    :param config: config object. See config.py for more information
+    :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+    :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+    :param prev_R: previous camera's rotation matrix in the global reference frame
+    :param prev_T: previous camera's translation vector in the global reference frame
+    :param cloud: point cloud with N points as a ndarray with shape Nx3
+    :return: rotation and translation of new camera and calculated 3D points with their indexes
+    """
     assert len(tracks) > 1
 
     R, T, points, indexes = None, None, None, None
@@ -192,6 +272,17 @@ def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
 
 
 def calculate_projection_errors(camera_matrix, Rs, Ts, cloud, tracks, masks):
+    """
+    Calculates the projection error of a given set of frames a point cloud. Resulting metric is
+    deviation in number of pixels averaged for each feature in each frame
+
+    :param Rs: list of R matrices
+    :param Ts: list of T vectors
+    :param cloud: point cloud with N points as a ndarray with shape Nx3
+    :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+    :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+    :return: list of vectors with deviation in pixels between measurement and projection
+    """
     if cloud is None:
         return float("inf")
 

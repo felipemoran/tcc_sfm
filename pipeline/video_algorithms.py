@@ -9,6 +9,22 @@ debug_colors = np.random.randint(0, 255, (200, 3))
 
 
 def klt_generator(config, file):
+    """
+    Generates and tracks KLT features from a video file.
+
+    This function generates new features according to the parameters set in config and tracks
+    old features as the video progresses. At each frame it tracks previous features
+    and according to the number of frames to skip it yields a vector of features and their
+    indexes.
+
+    Feature indexes are unique and never repeating therefore can be used for indexing throughout
+    the pipeline without collision.
+
+    :param config: config object. See config.py for more information
+    :param file: video file object
+    :return: yields a vector of features and corresponding indexes
+    """
+
     reset_features = True
 
     prev_frame = None
@@ -58,6 +74,17 @@ def klt_generator(config, file):
 
 
 def get_new_features(bw_frame, config, features, indexes, start_index):
+    """
+    Calculates new features to track and mergest it with previous ones
+
+    :param bw_frame: frame in black and white
+    :param config: config object. See config.py for more information
+    :param features: previous features
+    :param indexes: previous features indexes
+    :param start_index: next index to be used on new features
+    :return: new set of features to be tracked and corresponding indexes
+    """
+
     new_features = cv2.goodFeaturesToTrack(
         image=bw_frame,
         maxCorners=config.max_features,
@@ -66,6 +93,7 @@ def get_new_features(bw_frame, config, features, indexes, start_index):
         mask=None,
         blockSize=config.corner_selection.block_size,
     ).reshape((-1, 2))
+
     features, indexes = match_features(
         features,
         indexes,
@@ -78,6 +106,18 @@ def get_new_features(bw_frame, config, features, indexes, start_index):
 
 
 def track_features(bw_frame, config, indexes, prev_features, prev_frame):
+    """
+    Tracks a given set of indexes returning their new positions and dropping features
+    that are not found
+
+    :param bw_frame: frame in black and white
+    :param config: config object. See config.py for more information
+    :param indexes: previous features indexes
+    :param prev_features: features from previous frames
+    :param prev_frame: previous frame
+    :return: new location of features and indexes
+    """
+
     features, status, err = cv2.calcOpticalFlowPyrLK(
         prevImg=prev_frame,
         nextImg=bw_frame,
@@ -108,6 +148,20 @@ def match_features(
     threshold,
     max_features,
 ):
+    """
+    Given a set of old features and new proposed features, it selects which features to use.
+
+    Selection is done by calculating the euclidean distance between all features from
+    old_features vector 
+
+    :param old_features:
+    :param old_indexes:
+    :param new_features:
+    :param index_start:
+    :param threshold:
+    :param max_features:
+    :return:
+    """
     if len(old_features) == 0:
         return new_features, np.arange(len(new_features)) + index_start
 

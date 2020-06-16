@@ -1,4 +1,12 @@
-synthetic_case: false
+#pipeline_type: "video"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/cubo/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/cubo/720_30.m4v"
+
+pipeline_type: "synthetic"
+file_path: "2"
+
+synthetic_config:
+    noise_covariance: 5
 
 camera_matrix: &camera_matrix [
     [765.16859169, 0.0, 379.11876567],
@@ -39,17 +47,17 @@ klt:
 bundle_adjustment:
     tol: 1e-2
     method: "trf"
-    verbose: 0
+    verbose: 2
     camera_matrix: *camera_matrix
 
-    use_with_rolling_window: true
+    use_with_rolling_window: false
     rolling_window:
 #        method: growing_step
         method: constant_step
         period: 5 # in number of processed frame
         length: 10 # number of frames in the window taking step into account
         step: 1 # step=N means taking 1 every N frames
-    use_at_end: false
+    use_at_end: true
 
 five_pt_algorithm:
     min_number_of_points: 6
@@ -68,20 +76,7 @@ solve_pnp:
 
 init:
 #    method: five_pt_algorithm
-    error_threshold: 2
-    num_reconstruction_frames: 15
-    num_error_calculation_frames: 10
+    error_threshold: 200
+    num_reconstruction_frames: 2
+    num_error_calculation_frames: 1
 
-
-#    five_pt:
-#        five_pt_algorithm: *five_pt_algorithm
-#        use_bundle_adjustment: true
-#        bundle_adjustment: *bundle_adjustment
-#    three_frame:
-#        five_pt_algorithm: *five_pt_algorithm
-#        num_pnp_frames: 1
-#        solve_pnp: *solve_pnp
-#        use_bundle_adjustment: false
-#        bundle_adjustment: *bundle_adjustment
-#
-#    camera_matrix: *camera_matrix

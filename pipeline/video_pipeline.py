@@ -23,19 +23,13 @@ from pipeline.config import VideoPipelineConfig
 
 
 class VideoPipeline:
-    def __init__(
-        self,
-        config: VideoPipelineConfig,
-        display_klt_debug_frames: bool = False,
-    ) -> None:
-        self.display_klt_debug_frames = display_klt_debug_frames
+    def __init__(self, config: VideoPipelineConfig,) -> None:
         self.config = config
 
         # self.config.camera_matrix = np.array(self.config.camera_matrix)
 
-    def run(self, dir):
-        file, _ = get_video(dir)
-        track_generator = klt_generator(self.config.klt, file)
+    def run(self):
+        track_generator = self._setup(self.config.file_path)
 
         (
             Rs,
@@ -50,16 +44,26 @@ class VideoPipeline:
             track_generator, Rs, Ts, cloud, tracks, masks
         )
 
-        return self.config.camera_matrix, Rs, Ts, cloud
+        return Rs, Ts, cloud
+
+    def _setup(self, dir):
+        file, _ = get_video(dir)
+        track_generator = klt_generator(self.config.klt, file)
+        return track_generator
 
     def _init_reconstruction(self, track_generator):
+        """
+
+        @param track_generator: teste
+        @return: return description
+        """
         config = self.config.init
 
         tracks = []
         masks = []
 
         dropped_tracks = 0
-6
+
         for index, (track_slice, mask) in enumerate(track_generator):
             tracks += [track_slice]
             masks += [mask]
@@ -85,8 +89,6 @@ class VideoPipeline:
                     tracks[-config.num_error_calculation_frames :],
                     masks[-config.num_error_calculation_frames :],
                 ),
-                Rs,
-                Ts,
                 cloud,
             )
 
@@ -151,7 +153,7 @@ class VideoPipeline:
         return Rs, Ts, cloud, tracks, masks
 
     def _calculate_error(
-        self, track_generator, Rs, Ts, cloud,
+        self, track_generator, cloud,
     ):
         errors, Rs, Ts, tracks, masks = [], [], [], [], []
 
@@ -159,7 +161,7 @@ class VideoPipeline:
             tracks += [track]
             masks += [mask]
 
-            R, T = solve_pnp(config.solve_pnp, track, mask, cloud)
+            R, T = solve_pnp(self.config.solve_pnp, track, mask, cloud)
             Rs += [R]
             Ts += [T]
 
@@ -174,7 +176,6 @@ class VideoPipeline:
         return mean_error, tracks, masks
 
     def _run_ba(self, Rs, Ts, cloud, tracks, masks, final_frame=False):
-        # TODO: convert mask type
 
         config = self.config.bundle_adjustment
 
@@ -231,50 +232,3 @@ class VideoPipeline:
                     Ts[index] = T
 
         return Rs, Ts, cloud
-
-
-if __name__ == "__main__":
-    yaml = YAML()
-
-    with open("config.yaml", "r") as f:
-        config_raw = yaml.load(f)
-    config = dacite.from_dict(data=config_raw, data_class=VideoPipelineConfig)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "dir", help="Directory with image files for reconstructions"
-    )
-    parser.add_argument(
-        "-sd",
-        "--display_klt_debug_frames",
-        help="Display KLT debug frames",
-        action="store_true",
-        default=False,
-    )
-    args = parser.parse_args()
-
-    # for num_rec_frames, num_err_frames in product(
-    #     range(2, 11), [1, 2, 4, 8, 16]
-    # ):
-    #     config.init.num_reconstruction_frames = num_rec_frames
-    #     config.init.num_error_calculation_frames = num_err_frames
-    #     sfm = VideoPipeline(
-    #         display_klt_debug_frames=args.display_klt_debug_frames,
-    #         config=config,
-    #     )
-    #     try:
-    #         camera_matrix, Rs, Ts, cloud = sfm.run(args.dir)
-    #     except EndOfFileError:
-    #         pass
-
-    start = time.time()
-
-    sfm = VideoPipeline(
-        display_klt_debug_frames=args.display_klt_debug_frames, config=config,
-    )
-    camera_matrix, Rs, Ts, cloud = sfm.run(args.dir)
-
-    elapsed = time.time() - start
-    print("Elapsed {}".format(elapsed))
-
-    utils.visualize(config.camera_matrix, Rs, Ts, cloud)

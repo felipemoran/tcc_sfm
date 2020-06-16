@@ -19,6 +19,15 @@ from pipeline import utils
 
 
 def _prepare_optimization_input(cloud, Rs, Ts, tracks, masks):
+    """
+    Prepares the input data structure for the optimization step
+
+    :param cloud: point cloud with N points as a ndarray with shape Nx3
+    :param Rs: list of R matrices
+    :param Ts: list of T vectors
+    :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+    :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+    """
     assert len(Rs) == len(Ts) == len(tracks)
 
     camera_params = []
@@ -72,7 +81,15 @@ def _prepare_optimization_input(cloud, Rs, Ts, tracks, masks):
 def _parse_optimization_result(
     point_cloud, optimized_cameras, optimized_points
 ):
-    # Convert back to pipeline style from BA style
+    """
+    Convert data back to pipeline style from BA style
+
+    :param point_cloud: original pre-optimization point cloud
+    :param optimized_cameras: matrix with optimized cameras of shape Nx6. One camera per row with 3 parameters for rotation and 3 for translation
+    :param optimized_points: modified points in a Px3 matrix
+    :return:
+    """
+
     Rs = []
     Ts = []
 
@@ -186,7 +203,7 @@ def _get_optimized_params(params, n_cameras, n_points):
     return camera_params, points_3d
 
 
-def optimize(
+def _optimize(
     config, camera_params, points_3d, points_2d, camera_indices, point_indices
 ):
     """Apply bundle adjustment optimization
@@ -259,6 +276,17 @@ def optimize(
 
 
 def run(config, Rs, Ts, cloud, tracks, masks):
+    """
+    Entry point function for bundle adjustment. Parses input, feeds it to optimizes and parses the result back to same format
+
+    :param config: config object. See config.py for more information
+    :param Rs: list of R matrices
+    :param Ts: list of T vectors
+    :param cloud: point cloud with N points as a ndarray with shape Nx3
+    :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+    :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+    :return: returns optimized Rs, Ts and cloud
+    """
     (
         camera_params,
         points_3d,
@@ -268,7 +296,7 @@ def run(config, Rs, Ts, cloud, tracks, masks):
     ) = _prepare_optimization_input(cloud, Rs, Ts, tracks, masks)
 
     # Optimize
-    optimized_cameras, optimized_points = optimize(
+    optimized_cameras, optimized_points = _optimize(
         config=config,
         camera_params=camera_params,
         points_3d=points_3d,

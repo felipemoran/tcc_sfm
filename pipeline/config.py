@@ -95,33 +95,6 @@ class SolvePnPConfig:
         self.camera_matrix = np.array(self.camera_matrix)
 
 
-# @dataclass
-# class FivePointInitConfig:
-#     five_pt_algorithm: FivePointAlgorithmConfig
-#     use_bundle_adjustment: bool
-#     bundle_adjustment: Union[BundleAdjustmentConfig, None]
-#
-#     def __post_init__(self):
-#         assert not (
-#             self.use_bundle_adjustment
-#             and not (self.bundle_adjustment is not None)
-#         )
-#
-#
-# @dataclass
-# class ThreeFrameInitConfig:
-#     five_pt_algorithm: FivePointAlgorithmConfig
-#     solve_pnp: SolvePnPConfig
-#     use_bundle_adjustment: bool
-#     bundle_adjustment: Union[BundleAdjustmentConfig, None]
-#
-#     def __post_init__(self):
-#         assert not (
-#             self.use_bundle_adjustment
-#             and not (self.bundle_adjustment is not None)
-#         )
-
-
 @dataclass
 class InitConfig:
     error_threshold: float
@@ -130,7 +103,17 @@ class InitConfig:
 
 
 @dataclass
+class SyntheticConfig:
+    noise_covariance: float
+
+
+@dataclass
 class VideoPipelineConfig:
+    pipeline_type: str
+    file_path: str
+
+    synthetic_config: SyntheticConfig
+
     camera_matrix: Any
 
     use_five_pt_algorithm: bool
@@ -154,11 +137,6 @@ class VideoPipelineConfig:
         self.camera_matrix = np.array(self.camera_matrix)
 
 
-@dataclass
-class SyntheticPipelineConfig(VideoPipelineConfig):
-    synthetic_case: int
-
-
 def construct_tuple(self, node):
     seq = self.construct_sequence(node)
     if seq:
@@ -169,6 +147,11 @@ SafeConstructor.add_constructor(u"!tuple", construct_tuple)
 
 
 def load(file):
+    """
+    Loads YAML config file according to VideoPipelineConfig structure
+    :param file: config file object
+    :return: parsed config object
+    """
 
     config_raw = ruamel.yaml.safe_load(file)
 

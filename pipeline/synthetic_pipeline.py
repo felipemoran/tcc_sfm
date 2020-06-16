@@ -17,18 +17,29 @@ TYPE_POINT = 2
 
 
 class SyntheticPipeline(VideoPipeline):
+    """
+    Class that inherist from VideoPipeline that allows for the generation and injection of
+    synthetic data into the reconstruction pipeline for debugging and development purposes
+    """
+
     def __init__(self, config):
         super().__init__(config)
 
-        self.synthetic_case = 2
+        self.synthetic_case = None
 
-    def _get_video(self, file_path):
-        return None, None
+    def _setup(self, file_path):
+        self.synthetic_case = int(file_path)
+        return self._synthetic_generator()
 
-    def _file_to_tracks(self, file):
-        """Replaces the original function to generate synthetic data while maintaining everything else"""
+    def _synthetic_generator(self):
+        """
+        Replaces the original generator yielding synthetic data instead of real data
 
-        num_cameras = 2
+        :return: yields track a track slice containing synthetic features and their corresponding indexes
+        """
+        config = self.config.synthetic_config
+
+        num_cameras = 5
 
         points_3d = self._get_synthetic_points()
 
@@ -44,6 +55,10 @@ class SyntheticPipeline(VideoPipeline):
                 points_3d, R_cam_vec, T_cam, self.config.camera_matrix, None
             )[0].squeeze()
 
+            track_slice += np.random.normal(
+                loc=0.0, scale=config.noise_covariance, size=track_slice.shape
+            )
+
             slice_mask = (track_slice > 0).all(axis=1)
 
             drop = np.arange(1, 4) * 4 + index
@@ -58,6 +73,9 @@ class SyntheticPipeline(VideoPipeline):
             yield track_slice, index_mask
 
     def _get_synthetic_points(self):
+        """
+        Returns synthetic 3D points
+        """
         # points_3d = np.array(
         #     list(itertools.product([9, 10, 11], [4, 5, 6], [-1, 0, 1])), dtype=np.float_
         # )
@@ -73,6 +91,9 @@ class SyntheticPipeline(VideoPipeline):
         return points_3d
 
     def _get_synthetic_camera_rotations(self):
+        """
+        Returns rotation matrices of synthetic cameras in the global reference frame
+        """
         # matrizes de rotação para o posicionamento das cameras
         r1 = cv2.Rodrigues(np.array([-pi / 2, 0.0, 0.0]))[0]
         r2 = cv2.Rodrigues(np.array([0, 0, -pi / 4]))[0]
@@ -91,6 +112,10 @@ class SyntheticPipeline(VideoPipeline):
         return Rs
 
     def _get_synthetic_camera_translations(self):
+        """
+        Returns translation vectors of synthetic cameras in the global reference frame
+        :return:
+        """
         # vetores de translação das câmeras na base global
         if self.synthetic_case == 1:
             Ts = np.array(
@@ -114,4 +139,5 @@ if __name__ == "__main__":
     config = dacite.from_dict(data=config_raw, data_class=VideoPipelineConfig)
 
     sp = SyntheticPipeline(config)
-    sp.run(None)
+    camera_matrix, Rs, Ts, cloud = sp.run(None)
+    utils.visualize(config.camera_matrix, Rs, Ts, cloud)
