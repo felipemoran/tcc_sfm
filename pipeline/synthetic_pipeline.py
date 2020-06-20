@@ -212,7 +212,7 @@ class SyntheticPipeline(VideoPipeline):
         return Ts
 
     def _calculate_reconstruction_error(
-        self, Rs, Ts, cloud, tracks, masks, frame_numbers
+        self, Rs, Ts, tracks, masks, frame_numbers, cloud
     ):
         """
         Overwrite of superclass function that calculates camera orientation and
@@ -221,23 +221,13 @@ class SyntheticPipeline(VideoPipeline):
 
         :param Rs: list of R matrices
         :param Ts: list of T vectors
-        :param cloud: point cloud with N points as a ndarray with shape Nx3
         :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
         :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
         :param frame_numbers: list of indexes for each track in tracks
+        :param cloud: point cloud with N points as a ndarray with shape Nx3
         :return:
         """
         error_metric = ErrorMetric(frame_numbers[-1], *[np.nan] * 4)
-
-        (
-            tracks,
-            masks,
-            frame_numbers,
-            Rs,
-            Ts,
-        ) = self._select_reconstruction_error_data(
-            Rs, Ts, tracks, masks, frame_numbers
-        )
 
         projection_error = calculate_projection_error(
             self.config.camera_matrix, Rs, Ts, cloud, tracks, masks, mean=True

@@ -241,29 +241,33 @@ private:
         window.showWidget("cameras_frustums", viz::WTrajectoryFrustums(path, K, .1, viz::Color::navy()));
         window.setViewerPose(path[0]);
 
-//        setMouseCallback("ImageDisplay", (MouseCallback) mouseCallback, (void*) &window);
-//
-        window.spin();
+        bool show_viewer_pose = true;
+        bool use_viewer_pose = false;
 
-//        Affine3d pose;
-//
-//        const double pose_vals[] = {0.79171, 0.159985, -0.589576, 7.07692, -0.00343671, 0.96625, 0.257582, -3.16577, 0.610887, -0.201904, 0.76554, -5.11443, 0, 0, 0, 1};
-//        Affine3d pose2 = Affine3d(pose_vals);
-////        window.setViewerPose(pose2);
-//
-//        int counter = 0;
-//        window.spinOnce(200, true);
-//        while (!window.wasStopped()) {
-//            pose =  window.getViewerPose();
-//            for (int i=0; i<16; i++) {
-//                cout << pose.matrix.val[i] << ", ";
-//            }
-//            cout << endl;
-////            cout << pose.matrix.val << endl;
-//            window.spinOnce(1000, true);
-//        }
-//
-//        cout << "Visualisation closed" << endl;
+        if (!show_viewer_pose) {
+            window.spin();
+        } else {
+            Affine3d pose;
+
+            const double pose_vals[] = {0.97492, 0.0146819, -0.222069, 4.80515, 0.020948, 0.987338, 0.157242, -2.38275, 0.221565, -0.157951, 0.962268, -12.7444, 0, 0, 0, 1, };
+            Affine3d pose2 = Affine3d(pose_vals);
+
+            if (use_viewer_pose) {
+                window.setViewerPose(pose2);
+            }
+
+            int counter = 0;
+            window.spinOnce(200, true);
+            while (!window.wasStopped()) {
+                pose = window.getViewerPose();
+                for (int i = 0; i < 16; i++) {
+                    cout << pose.matrix.val[i] << ", ";
+                }
+                cout << endl;
+                window.spinOnce(1000, true);
+            }
+        }
+        cout << "Visualisation closed" << endl;
     }
 
 //    static void mouseCallback(const viz::MouseEvent::Type& type, const viz::MouseEvent::MouseButton& button, const Point& p, int modifiers) {

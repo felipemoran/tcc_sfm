@@ -42,7 +42,12 @@ class VideoPipeline:
             masks,
             frame_numbers,
             track_generator,
+            init_errors,
         ) = self._init_reconstruction(track_generator)
+
+        if cloud is None:
+            # init faild
+            return None, None, None, init_errors, [], []
 
         (
             Rs,
@@ -57,7 +62,7 @@ class VideoPipeline:
             track_generator, Rs, Ts, cloud, tracks, masks, frame_numbers
         )
 
-        return Rs, Ts, cloud, online_errors, post_errors
+        return Rs, Ts, cloud, init_errors, online_errors, post_errors
 
     def _setup(self, dir):
         file, _ = get_video(dir)
@@ -76,6 +81,8 @@ class VideoPipeline:
         masks = []
         frame_numbers = []
 
+        init_errors = []
+
         dropped_tracks = 0
 
         for frame_number, track_slice, mask in track_generator:
@@ -89,6 +96,9 @@ class VideoPipeline:
                 + config.num_error_calculation_frames
             ):
                 continue
+
+            # update number of supposed first frame for reconstruction
+            self._first_reconstruction_frame_number = frame_numbers[0]
 
             reconstruction = self._reconstruct(
                 zip(
@@ -107,28 +117,27 @@ class VideoPipeline:
                 frame_numbers[-config.num_error_calculation_frames :],
                 cloud,
             )
+            init_errors += [error]
 
-            print(
-                f"{self.config.bundle_adjustment.use_at_end},"
-                f"{self.config.bundle_adjustment.use_with_rolling_window},"
-                f"{self.config.bundle_adjustment.rolling_window.method},"
-                f"{self.config.synthetic_config.noise_covariance},"
-                f"{config.num_reconstruction_frames},"
-                f"{config.num_error_calculation_frames},"
-                f"{dropped_tracks},"
-                f"{error}"
-            )
+            # print(
+            #     f"{self.config.bundle_adjustment.use_at_end},"
+            #     f"{self.config.bundle_adjustment.use_with_rolling_window},"
+            #     f"{self.config.bundle_adjustment.rolling_window.method},"
+            #     f"{self.config.synthetic_config.noise_covariance},"
+            #     f"{config.num_reconstruction_frames},"
+            #     f"{config.num_error_calculation_frames},"
+            #     f"{dropped_tracks},"
+            #     f"{error}"
+            # )
 
             # exit init or or drop first track/mask
-            if error > config.error_threshold:
+            if error.projection > config.error_threshold:
                 # drop first track ank mask and rerun the process
                 tracks.pop(0)
                 masks.pop(0)
                 frame_numbers.pop(0)
                 dropped_tracks += 1
             else:
-                self._first_reconstruction_frame_number = frame_numbers[0]
-
                 # add tracks used for error calculation back to track generator
                 track_generator = itertools.chain(
                     zip(
@@ -139,9 +148,9 @@ class VideoPipeline:
                     track_generator,
                 )
 
-                return reconstruction[:6] + (track_generator,)
+                return reconstruction[:6] + (track_generator, init_errors)
         else:
-            raise EndOfFileError("Not enough frames for init phase")
+            return (None,) * 7 + (init_errors,)
 
     def _reconstruct(
         self,
@@ -191,7 +200,10 @@ class VideoPipeline:
 
             online_errors += [
                 self._calculate_reconstruction_error(
-                    Rs, Ts, cloud, tracks, masks, frame_numbers
+                    *self._select_reconstruction_error_data(
+                        Rs, Ts, tracks, masks, frame_numbers
+                    ),
+                    cloud,
                 )
             ]
 
@@ -241,35 +253,29 @@ class VideoPipeline:
             Rs += [R]
             Ts += [T]
 
-        error = calculate_projection_error(
-            self.config.camera_matrix, Rs, Ts, cloud, tracks, masks, mean=True
+        # error = calculate_projection_error(
+        #     self.config.camera_matrix, Rs, Ts, cloud, tracks, masks, mean=True
+        # )
+
+        error = self._calculate_reconstruction_error(
+            Rs, Ts, tracks, masks, frame_numbers, cloud
         )
 
         return error
 
     def _calculate_reconstruction_error(
-        self, Rs, Ts, cloud, tracks, masks, frame_numbers
+        self, Rs, Ts, tracks, masks, frame_numbers, cloud
     ):
         """
         
         :param Rs: list of R matrices
         :param Ts: list of T vectors
-        :param cloud: point cloud with N points as a ndarray with shape Nx3
         :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
         :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
         :param frame_numbers: list of indexes for each track in tracks
+        :param cloud: point cloud with N points as a ndarray with shape Nx3
         :return:
         """
-
-        (
-            tracks,
-            masks,
-            frame_numbers,
-            Rs,
-            Ts,
-        ) = self._select_reconstruction_error_data(
-            Rs, Ts, tracks, masks, frame_numbers
-        )
 
         projection_error = calculate_projection_error(
             self.config.camera_matrix, Rs, Ts, cloud, tracks, masks, mean=True
@@ -301,11 +307,11 @@ class VideoPipeline:
         error_window = self.config.error_calculation.window_length
 
         return_slices = (
+            Rs[-error_window:],
+            Ts[-error_window:],
             tracks[-error_window:],
             masks[-error_window:],
             frame_numbers[-error_window:],
-            Rs[-error_window:],
-            Ts[-error_window:],
         )
 
         return return_slices
@@ -340,12 +346,10 @@ class VideoPipeline:
         for i in range(1, len(Rs) + 1):
             errors += [
                 self._calculate_reconstruction_error(
-                    Rs[:i],
-                    Ts[:i],
+                    *self._select_reconstruction_error_data(
+                        Rs[:i], Ts[:i], tracks[:i], masks[:i], frame_numbers[:i]
+                    ),
                     cloud,
-                    tracks[:i],
-                    masks[:i],
-                    frame_numbers[:i],
                 )
             ]
 

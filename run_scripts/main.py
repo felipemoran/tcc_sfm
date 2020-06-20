@@ -29,7 +29,7 @@ if __name__ == "__main__":
     else:
         raise Exception("Invalid pipeline type")
 
-    Rs, Ts, cloud, online_errors, post_errors = pipeline.run()
+    Rs, Ts, cloud, init_errors, online_errors, post_errors = pipeline.run()
 
     elapsed = time.time() - start
     print("Elapsed {}".format(elapsed))
@@ -40,4 +40,3 @@ if __name__ == "__main__":
     df = pd.DataFrame([x.__dict__ for x in post_errors])
     print(df)
     utils.visualize(config.camera_matrix, Rs, Ts, cloud)
-    a = 1
