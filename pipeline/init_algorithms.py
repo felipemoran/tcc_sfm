@@ -5,7 +5,7 @@ from pipeline import bundle_adjustment
 from pipeline.reconstruction_algorithms import (
     five_pt,
     triangulate,
-    calculate_projection_errors,
+    calculate_projection_error,
 )
 from pipeline.utils import visualize
 

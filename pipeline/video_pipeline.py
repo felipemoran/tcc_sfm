@@ -14,9 +14,10 @@ from pipeline import bundle_adjustment
 from pipeline.errors import EndOfFileError
 from pipeline.reconstruction_algorithms import (
     calculate_projection,
-    calculate_projection_errors,
+    calculate_projection_error,
     solve_pnp,
 )
+from pipeline.utils import ErrorMetric
 from pipeline.video_algorithms import get_video, klt_generator
 from pipeline.init_algorithms import five_pt_init
 from pipeline.config import VideoPipelineConfig
@@ -25,6 +26,8 @@ from pipeline.config import VideoPipelineConfig
 class VideoPipeline:
     def __init__(self, config: VideoPipelineConfig,) -> None:
         self.config = config
+
+        self._first_reconstruction_frame_number = None
 
         # self.config.camera_matrix = np.array(self.config.camera_matrix)
 
@@ -37,14 +40,24 @@ class VideoPipeline:
             cloud,
             tracks,
             masks,
+            frame_numbers,
             track_generator,
         ) = self._init_reconstruction(track_generator)
 
-        Rs, Ts, cloud, tracks, masks = self._reconstruct(
-            track_generator, Rs, Ts, cloud, tracks, masks
+        (
+            Rs,
+            Ts,
+            cloud,
+            tracks,
+            masks,
+            frame_numbers,
+            online_errors,
+            post_errors,
+        ) = self._reconstruct(
+            track_generator, Rs, Ts, cloud, tracks, masks, frame_numbers
         )
 
-        return Rs, Ts, cloud
+        return Rs, Ts, cloud, online_errors, post_errors
 
     def _setup(self, dir):
         file, _ = get_video(dir)
@@ -61,12 +74,14 @@ class VideoPipeline:
 
         tracks = []
         masks = []
+        frame_numbers = []
 
         dropped_tracks = 0
 
-        for index, (track_slice, mask) in enumerate(track_generator):
+        for frame_number, track_slice, mask in track_generator:
             tracks += [track_slice]
             masks += [mask]
+            frame_numbers += [frame_number]
 
             if (
                 len(tracks)
@@ -75,24 +90,29 @@ class VideoPipeline:
             ):
                 continue
 
-            # TODO: call full reconstruction with K frames
-            Rs, Ts, cloud, rec_tracks, rec_masks = self._reconstruct(
+            reconstruction = self._reconstruct(
                 zip(
+                    frame_numbers[: config.num_reconstruction_frames],
                     tracks[: config.num_reconstruction_frames],
                     masks[: config.num_reconstruction_frames],
-                )
-            )
-
-            # TODO: call error calculation with reconstruction and P frames
-            error, err_tracks, err_masks = self._calculate_error(
-                zip(
-                    tracks[-config.num_error_calculation_frames :],
-                    masks[-config.num_error_calculation_frames :],
                 ),
+                is_init=True,
+            )
+            cloud = reconstruction[2]
+
+            # call error calculation with reconstruction and P frames
+            error = self._calculate_init_error(
+                tracks[-config.num_error_calculation_frames :],
+                masks[-config.num_error_calculation_frames :],
+                frame_numbers[-config.num_error_calculation_frames :],
                 cloud,
             )
 
             print(
+                f"{self.config.bundle_adjustment.use_at_end},"
+                f"{self.config.bundle_adjustment.use_with_rolling_window},"
+                f"{self.config.bundle_adjustment.rolling_window.method},"
+                f"{self.config.synthetic_config.noise_covariance},"
                 f"{config.num_reconstruction_frames},"
                 f"{config.num_error_calculation_frames},"
                 f"{dropped_tracks},"
@@ -104,14 +124,22 @@ class VideoPipeline:
                 # drop first track ank mask and rerun the process
                 tracks.pop(0)
                 masks.pop(0)
+                frame_numbers.pop(0)
                 dropped_tracks += 1
             else:
+                self._first_reconstruction_frame_number = frame_numbers[0]
+
                 # add tracks used for error calculation back to track generator
                 track_generator = itertools.chain(
-                    zip(err_tracks, err_masks), track_generator
+                    zip(
+                        frame_numbers[-config.num_error_calculation_frames :],
+                        tracks[-config.num_error_calculation_frames :],
+                        masks[-config.num_error_calculation_frames :],
+                    ),
+                    track_generator,
                 )
 
-                return Rs, Ts, cloud, rec_tracks, rec_masks, track_generator
+                return reconstruction[:6] + (track_generator,)
         else:
             raise EndOfFileError("Not enough frames for init phase")
 
@@ -123,57 +151,205 @@ class VideoPipeline:
         cloud=None,
         tracks=None,
         masks=None,
+        frame_numbers=None,
+        is_init=False,
     ):
-        if tracks is None:
-            tracks, masks = [], []
+        online_errors = []
 
-        for index, (track_slice, index_mask) in enumerate(track_generator):
+        if tracks is None:
+            tracks, masks, frame_numbers = [], [], []
+
+        for frame_number, track_slice, index_mask in track_generator:
             tracks += [track_slice]
             masks += [index_mask]
+            frame_numbers += [frame_number]
 
+            # Init cloud
             if cloud is None:
                 Rs, Ts, cloud = five_pt_init(self.config, tracks, masks)
                 continue
 
+            # Reconstruct
             R, T, points, index_mask = calculate_projection(
                 self.config, tracks, masks, Rs[-1], Ts[-1], cloud
             )
 
+            # Add new points to cloud
             if points is not None:
                 cloud = utils.add_points_to_cloud(cloud, points, index_mask)
 
+            # Save camera pose
             Rs += [R]
             Ts += [T]
 
+            # Run optimizations
             Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks, masks)
 
-        else:
+            # Calculate and store error metrics
+            if is_init or not self.config.error_calculation.online_calculation:
+                continue
+
+            online_errors += [
+                self._calculate_reconstruction_error(
+                    Rs, Ts, cloud, tracks, masks, frame_numbers
+                )
+            ]
+
+        # Optimize at end, but only if it's not in init phase
+        if not is_init:
             Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks, masks, True)
 
-        return Rs, Ts, cloud, tracks, masks
+        if not is_init and self.config.error_calculation.post_calculation:
+            post_errors = self._calculate_post_reconstruction_errors(
+                Rs, Ts, cloud, tracks, masks, frame_numbers
+            )
+        else:
+            post_errors = []
 
-    def _calculate_error(
-        self, track_generator, cloud,
-    ):
-        errors, Rs, Ts, tracks, masks = [], [], [], [], []
+        return (
+            Rs,
+            Ts,
+            cloud,
+            tracks,
+            masks,
+            frame_numbers,
+            online_errors,
+            post_errors,
+        )
 
-        for index, (track, mask) in enumerate(track_generator):
-            tracks += [track]
-            masks += [mask]
+    def _calculate_init_error(self, tracks, masks, frame_numbers, cloud):
+        """
+        Calculates the projection error for a set of frames given some init
+         conditions.
 
+        It calculates the error by first calculating the expected rotation and
+        translation followed by the resulting 2D projection of this pose and
+        then comparing it with the original track slice.
+
+        :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+        :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+        :param frame_numbers: list of indexes for each track in tracks
+        :param cloud: actual point cloud
+        :return: mean error
+        """
+        # Rs and Ts are only used in the synthetic pipeline
+
+        errors, Rs, Ts, = [], [], []
+
+        for frame_number, track, mask in zip(frame_numbers, tracks, masks):
             R, T = solve_pnp(self.config.solve_pnp, track, mask, cloud)
             Rs += [R]
             Ts += [T]
 
-        errors = calculate_projection_errors(
-            self.config.camera_matrix, Rs, Ts, cloud, tracks, masks
+        error = calculate_projection_error(
+            self.config.camera_matrix, Rs, Ts, cloud, tracks, masks, mean=True
         )
 
-        mean_error = np.array(
-            [frame_errors.mean() for frame_errors in errors]
-        ).mean()
+        return error
 
-        return mean_error, tracks, masks
+    def _calculate_reconstruction_error(
+        self, Rs, Ts, cloud, tracks, masks, frame_numbers
+    ):
+        """
+        
+        :param Rs: list of R matrices
+        :param Ts: list of T vectors
+        :param cloud: point cloud with N points as a ndarray with shape Nx3
+        :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+        :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+        :param frame_numbers: list of indexes for each track in tracks
+        :return:
+        """
+
+        (
+            tracks,
+            masks,
+            frame_numbers,
+            Rs,
+            Ts,
+        ) = self._select_reconstruction_error_data(
+            Rs, Ts, tracks, masks, frame_numbers
+        )
+
+        projection_error = calculate_projection_error(
+            self.config.camera_matrix, Rs, Ts, cloud, tracks, masks, mean=True
+        )
+
+        error = ErrorMetric(
+            frame_numbers[-1], projection_error, np.nan, np.nan, np.nan
+        )
+
+        return error
+
+    def _select_reconstruction_error_data(
+        self, Rs, Ts, tracks, masks, frame_numbers
+    ):
+        """
+        Selects data to be used on reconstruction error calculation. Returns
+        slices of inputs.
+
+        :param Rs: list of R matrices
+        :param Ts: list of T vectors
+        :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+        :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+        :param frame_numbers: list of indexes for each track in tracks
+        :return: slices of inputs with items to be used for calculation
+        """
+        if len(Rs) % self.config.error_calculation.period != 0:
+            return [] * 5
+
+        error_window = self.config.error_calculation.window_length
+
+        return_slices = (
+            tracks[-error_window:],
+            masks[-error_window:],
+            frame_numbers[-error_window:],
+            Rs[-error_window:],
+            Ts[-error_window:],
+        )
+
+        return return_slices
+
+    def _calculate_post_reconstruction_errors(
+        self, Rs, Ts, cloud, tracks, masks, frame_numbers
+    ):
+        """
+        Similar to calculate_reconstruction_error but it calculates errors
+        after all reconstruction.
+
+        :param Rs:
+        :param Ts:
+        :param cloud:
+        :param tracks:
+        :param masks:
+        :param frame_numbers:
+        :return:
+        """
+        if not self.config.error_calculation.post_calculation:
+            return []
+
+        assert (
+            len(Rs)
+            == len(Ts)
+            == len(tracks)
+            == len(masks)
+            == len(frame_numbers)
+        )
+
+        errors = []
+        for i in range(1, len(Rs) + 1):
+            errors += [
+                self._calculate_reconstruction_error(
+                    Rs[:i],
+                    Ts[:i],
+                    cloud,
+                    tracks[:i],
+                    masks[:i],
+                    frame_numbers[:i],
+                )
+            ]
+
+        return errors
 
     def _run_ba(self, Rs, Ts, cloud, tracks, masks, final_frame=False):
 

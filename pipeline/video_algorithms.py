@@ -42,7 +42,7 @@ def klt_generator(config, file):
         skip_at_getter = config.frames_to_skip
         yield_period = 1
 
-    for counter, (color_frame, bw_frame) in enumerate(
+    for frame_number, (color_frame, bw_frame) in enumerate(
         frame_getter(file, skip_at_getter)
     ):
         if prev_frame is not None:
@@ -50,7 +50,7 @@ def klt_generator(config, file):
                 bw_frame, config, indexes, prev_features, prev_frame
             )
 
-        if reset_features or counter % reset_period == 0:
+        if reset_features or frame_number % reset_period == 0:
             reset_features = False
 
             features, indexes = get_new_features(
@@ -58,8 +58,8 @@ def klt_generator(config, file):
             )
             start_index = max(indexes) + 1
 
-        if counter % yield_period == 0:
-            yield features, indexes
+        if frame_number % yield_period == 0:
+            yield frame_number, features, indexes
 
         prev_frame, prev_features = bw_frame, features
 
@@ -174,7 +174,7 @@ def match_features(
     new_features = new_features[new_points_mask]
     new_indexes = np.arange(len(new_features)) + index_start
 
-    # TODO: limit number of returned features
+    # limit number of returned features
     points_to_keep = min(max_features - len(new_features), len(old_features))
     old_features_mask = choose_old_features(closeness_table, points_to_keep)
 
@@ -195,8 +195,6 @@ def choose_old_features(closeness_table, points_to_keep):
     table_sum = closeness_table.sum(axis=1)
 
     base_indexes = np.arange(len(mask))
-
-    # TODO: continue debugging here
 
     for sum_threshold in range(max(table_sum + 1)):
         points_to_go = points_to_keep - len(indexes)

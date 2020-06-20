@@ -1,10 +1,22 @@
 import os
+from itertools import count, chain
+from dataclasses import dataclass
+
 import numpy as np
 
 
 TYPE_CALIBRATION_MATRIX = 0
 TYPE_CAMERA = 1
 TYPE_POINT = 2
+
+
+@dataclass
+class ErrorMetric:
+    frame_number: int
+    projection: float
+    cam_orientation: float
+    cam_position: float
+    point_position: float
 
 
 def write_to_viz_file(camera_matrix, Rs, Ts, points):
@@ -224,3 +236,36 @@ def add_points_to_cloud(cloud, points, index_mask):
     cloud[new_points_mask] = points[np.isin(index_mask, new_points_mask)]
 
     return cloud
+
+
+def generator_copier(generator, num_copies, num_elements=None):
+    """
+    Copies a generator multiple times up to a certain point or until it's end,
+    whichever comes first. The generator evaluation is eager, meaning that if an
+    infinite generator is passed without a number of elements to be copied the
+    code will hang.
+
+    :param generator: generator to be copied
+    :param num_copies: number of copies to be generated
+    :param num_elements: number of elements to be copied
+    :return: list with original generator and copies
+    """
+    return_list = []
+
+    index_generator = (
+        range(num_elements) if num_elements is not None else count(0, 1)
+    )
+
+    for _ in index_generator:
+        try:
+            return_list += [next(generator)]
+        except StopIteration:
+            break
+
+    generators = [chain(return_list, generator)] + [
+        (item for item in return_list) for _ in range(num_copies)
+    ]
+
+    generators[0] = chain(generators[0], generator)
+
+    return generators

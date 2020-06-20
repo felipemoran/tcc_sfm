@@ -271,7 +271,9 @@ def calculate_projection(config, tracks, masks, prev_R, prev_T, cloud):
     return R, T, points, indexes
 
 
-def calculate_projection_errors(camera_matrix, Rs, Ts, cloud, tracks, masks):
+def calculate_projection_error(
+    camera_matrix, Rs, Ts, cloud, tracks, masks, mean=False
+):
     """
     Calculates the projection error of a given set of frames a point cloud. Resulting metric is
     deviation in number of pixels averaged for each feature in each frame
@@ -281,6 +283,7 @@ def calculate_projection_errors(camera_matrix, Rs, Ts, cloud, tracks, masks):
     :param cloud: point cloud with N points as a ndarray with shape Nx3
     :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
     :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+    :param mean: flag to indicate if return should be the mean of all values
     :return: list of vectors with deviation in pixels between measurement and projection
     """
     if cloud is None:
@@ -302,5 +305,11 @@ def calculate_projection_errors(camera_matrix, Rs, Ts, cloud, tracks, masks):
 
         delta = original_track[track_bool_mask] - projection_track
         errors += [np.linalg.norm(delta, axis=1)]
+
+    if mean:
+        mean_error = np.array(
+            [frame_errors.mean() for frame_errors in errors]
+        ).mean()
+        return mean_error
 
     return errors

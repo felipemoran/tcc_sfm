@@ -1,6 +1,10 @@
 import time
+from functools import reduce
 
 import dacite
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 from pipeline import utils
 from pipeline.config import VideoPipelineConfig
@@ -25,9 +29,15 @@ if __name__ == "__main__":
     else:
         raise Exception("Invalid pipeline type")
 
-    Rs, Ts, cloud = pipeline.run()
+    Rs, Ts, cloud, online_errors, post_errors = pipeline.run()
 
     elapsed = time.time() - start
     print("Elapsed {}".format(elapsed))
 
+    print(f"Errors: {online_errors}")
+    print(f"Errors: {post_errors}")
+
+    df = pd.DataFrame([x.__dict__ for x in post_errors])
+    print(df)
     utils.visualize(config.camera_matrix, Rs, Ts, cloud)
+    a = 1

@@ -71,6 +71,14 @@ class BundleAdjustmentConfig:
 
 
 @dataclass
+class ErrorCalculationConfig:
+    period: int
+    window_length: int
+    online_calculation: bool
+    post_calculation: bool
+
+
+@dataclass
 class FivePointAlgorithmConfig:
     min_number_of_points: int
     essential_mat_threshold: float
@@ -103,8 +111,21 @@ class InitConfig:
 
 
 @dataclass
+class Case3Config:
+    radius: float
+    number_of_cameras: int
+    step_size: float
+    x_points: int
+    y_points: int
+    z_points: int
+
+
+@dataclass
 class SyntheticConfig:
     noise_covariance: float
+    number_of_cameras: int
+
+    case_3: Case3Config
 
 
 @dataclass
@@ -123,6 +144,8 @@ class VideoPipelineConfig:
     klt: KLTConfig
 
     init: InitConfig
+
+    error_calculation: ErrorCalculationConfig
 
     five_pt_algorithm: FivePointAlgorithmConfig
     solve_pnp: SolvePnPConfig
