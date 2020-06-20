@@ -22,6 +22,7 @@
 //#include <boost/graph/graphviz.hpp>
 #include <boost/tokenizer.hpp>
 
+#include <unistd.h>
 
 #define _USE_OPENCV true
 //#include <MVS/Interface.h>
@@ -42,16 +43,18 @@ private:
     ifstream infile; // opened file
     string file_info;
 
-    vector<Matx33f> Rs;
-    vector<Vec3f> Ts;
+    vector<Matx33d> Rs;
+    vector<Vec3d> Ts;
     vector<int> camera_ids;
 
 //    vector<Mat> points;
-    vector<Vec3f> points;
+    vector<Vec3d> points;
     vector<Vec3b> point_colors;
     vector<int> point_ids;
 
-    Matx33f K;
+    Matx33d K;
+    viz::Viz3d window;
+
 
 public:
     explicit Visualizer(string dir): dir(std::move(dir)) {
@@ -105,9 +108,12 @@ private:
         getline(infile, file_info);
         cout << "File info: " << file_info << endl << endl;
 
+        int counter = 0;
+
         // Then proceed to getting the rest
         while (getline(infile, line))
         {
+            counter++;
             Tokenizer tok(line);
             beg = tok.begin();
 
@@ -121,44 +127,44 @@ private:
             switch(item_type) {
                 case TYPE_CALIBRATION_MATRIX: {
 //                    cout << "Loading Camera Matrix... ";
-                    K = Matx33f(
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++)
+                    K = Matx33d(
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++)
                             );
 //                    cout << "DONE" << endl;
                     break;
                 }
 
                 case TYPE_CAMERA: {
-                    Vec3f t;
-                    Matx33f R;
+                    Vec3d t;
+                    Matx33d R;
 
 //                    cout << "Loading R: ";
-                    R = Matx33f(
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++)
+                    R = Matx33d(
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++)
                     );
 //                    cout << "DONE" << endl;
 
 //                    cout << "Loading T: ";
-                    t = Vec3f(
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++)
+                    t = Vec3d(
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++)
                     );
 //                    t = Mat(3, 3, CV_32FC3, t_values);
 //                    cout << "DONE" << endl;
@@ -174,14 +180,14 @@ private:
                 }
                 case TYPE_POINT: {
                     vector<float> point_color_values;
-                    Vec3f point;
+                    Vec3d point;
                     Vec3b point_color;
 
 //                    cout << "Loading Point... ";
-                    point = Vec3f(
-                            stof(*beg++),
-                            stof(*beg++),
-                            stof(*beg++)
+                    point = Vec3d(
+                            stod(*beg++),
+                            stod(*beg++),
+                            stod(*beg++)
                     );
 //                    cout << "DONE" << endl;
 
@@ -189,7 +195,7 @@ private:
 //                        cout << "Point Color not found" << endl;
                         point_color = Vec3b(0, 0, 0);
                     } else {
-                        point_color = Vec3f(
+                        point_color = Vec3d(
                                 stoi(*beg++),
                                 stoi(*beg++),
                                 stoi(*beg++)
@@ -206,11 +212,15 @@ private:
         }
     }
 
+    static void mouseCallback(int event, int x, int y, int flags, void* userdata) {
+        cout << "Mouse event" << endl;
+    }
+
     void visualize3D() {
         cout << "Visualize reconstruction" << endl;
 
         // Create 3D windows
-        viz::Viz3d window("Coordinate Frame");
+        window = viz::Viz3d("SfM");
         window.setWindowSize(Size(2500, 1500));
         window.setWindowPosition(Point(150, 150));
         window.setBackgroundColor(viz::Color::white());
@@ -231,11 +241,34 @@ private:
         window.showWidget("cameras_frustums", viz::WTrajectoryFrustums(path, K, .1, viz::Color::navy()));
         window.setViewerPose(path[0]);
 
-        /// Wait for key 'q' to close the window
-        cout << "Press 'q' to close ... " << endl;
-
+//        setMouseCallback("ImageDisplay", (MouseCallback) mouseCallback, (void*) &window);
+//
         window.spin();
+
+//        Affine3d pose;
+//
+//        const double pose_vals[] = {0.79171, 0.159985, -0.589576, 7.07692, -0.00343671, 0.96625, 0.257582, -3.16577, 0.610887, -0.201904, 0.76554, -5.11443, 0, 0, 0, 1};
+//        Affine3d pose2 = Affine3d(pose_vals);
+////        window.setViewerPose(pose2);
+//
+//        int counter = 0;
+//        window.spinOnce(200, true);
+//        while (!window.wasStopped()) {
+//            pose =  window.getViewerPose();
+//            for (int i=0; i<16; i++) {
+//                cout << pose.matrix.val[i] << ", ";
+//            }
+//            cout << endl;
+////            cout << pose.matrix.val << endl;
+//            window.spinOnce(1000, true);
+//        }
+//
+//        cout << "Visualisation closed" << endl;
     }
+
+//    static void mouseCallback(const viz::MouseEvent::Type& type, const viz::MouseEvent::MouseButton& button, const Point& p, int modifiers) {
+//        cout << "Mouse event" << endl;
+//    }
 };
 
 
