@@ -3,8 +3,10 @@ from functools import reduce
 
 import dacite
 import pandas as pd
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from pipeline import utils
 from pipeline.config import VideoPipelineConfig
@@ -18,13 +20,16 @@ pipeline_type: "synthetic"
 file_path: "3"
 
 synthetic_config:
-    noise_covariance: 10
+    noise_covariance: 5
     number_of_cameras: 500
 
     case_3:
-        radius: 8
-        number_of_cameras: 50
-        size: 4
+        radius: 5
+        number_of_cameras: 25
+        step_size: 0.5
+        x_points: 5
+        y_points: 5
+        z_points: 4
 
 camera_matrix: &camera_matrix [
     [765.16859169, 0.0, 379.11876567],
@@ -65,6 +70,8 @@ klt:
 error_calculation:
     period: 1
     window_length: 1
+    online_calculation: True
+    post_calculation: True
 
 bundle_adjustment:
     tol: 1e-2
@@ -102,24 +109,28 @@ solve_pnp:
 
 init:
 #    method: five_pt_algorithm
-    error_threshold: 85
-    num_reconstruction_frames: 10
+    error_threshold: 25
+    num_reconstruction_frames: 5
     num_error_calculation_frames: 5
 
 """
 
 
-if __name__ == "__main__":
+def generate_data():
+    num_runs = 50
+
     yaml = YAML()
 
-    case_errors = []
+    df_init_errors = None
+    df_online_errors = None
+    df_post_errors = None
 
-    labels = [
-        "1: no BA",
-        "3: rolling window BA",
+    case_labels = [
+        "Rolling window: OFF",
+        "Roliing window: ON",
     ]
 
-    for case in range(len(labels)):
+    for case in range(len(case_labels)):
         config_raw = yaml.load(config_string)
         config = dacite.from_dict(
             data=config_raw, data_class=VideoPipelineConfig
@@ -131,88 +142,94 @@ if __name__ == "__main__":
 
         if case == 0:
             config.bundle_adjustment.use_with_rolling_window = False
+            config.bundle_adjustment.use_at_end = True
         elif case == 1:
             config.bundle_adjustment.use_with_rolling_window = True
+            config.bundle_adjustment.use_at_end = True
         else:
             raise ValueError()
 
         total_errors = []
 
-        for i in range(250):
-            print(f"--- Run {i}")
-            Rs, Ts, cloud, errors = pipeline.run()
-            total_errors += [errors]
+        for run in range(num_runs):
+            print(
+                f"--- Case {case+1}/{len(case_labels)} - Run {run + 1}/{num_runs}"
+            )
+            Rs, Ts, cloud, init_error, online_error, post_error = pipeline.run()
+
+            df_init_error = pd.DataFrame([x.__dict__ for x in init_error])
+            df_init_error["case"] = f"{case_labels[case]}"
+            df_init_error["run"] = run
+
+            df_online_error = pd.DataFrame([x.__dict__ for x in online_error])
+            df_online_error["case"] = f"{case_labels[case]}, BA at end: OFF"
+            df_online_error["run"] = run
+
+            df_post_error = pd.DataFrame([x.__dict__ for x in post_error])
+            df_post_error["case"] = f"{case_labels[case]}, BA at end: ON"
+            df_post_error["run"] = run
+
+            if df_init_error is None:
+                df_init_errors = df_init_error
+                df_online_errors = df_online_error
+                df_post_errors = df_post_error
+            else:
+                df_init_errors = pd.concat([df_init_errors, df_init_error])
+                df_online_errors = pd.concat(
+                    [df_online_errors, df_online_error]
+                )
+                df_post_errors = pd.concat([df_post_errors, df_post_error])
 
         elapsed = time.time() - start
         print("Elapsed {}".format(elapsed))
-
-        print(f"Errors: {errors}")
 
         # utils.visualize(config.camera_matrix, Rs, Ts, cloud)
 
         #     POST PROCESSING
 
-        case_errors += reduce(
-            lambda a, b: a + b,
-            [
-                [
-                    [case, run_number, counter] + item
-                    for counter, item in enumerate(run_errors)
-                ]
-                for run_number, run_errors in enumerate(total_errors)
-            ],
-        )
+        df_reconstruction = pd.concat([df_online_errors, df_post_errors])
 
-    df = pd.DataFrame(
-        np.array(case_errors), columns=["case", "run", "counter", "r", "t", "p"]
-    )
+    return [df_init_errors, df_reconstruction]
 
-    fig, axis = plt.subplots(2, 2)
 
-    labels = [
-        "1: no BA",
-        "3: rolling window BA",
-    ]
+def plot_data(dfs):
+    plt.figure()
+    sns.barplot(x="case", y="dropped_frames", data=df_drop)
 
-    for index, case in df.groupby("case"):
-        axis[0, 0].plot(
-            case[case.run == 0].counter,
-            case.groupby("counter").r.mean(),
-            label=labels[int(index)],
-        )
-        axis[0, 0].fill_between(
-            case[case.run == 0].counter,
-            case.groupby("counter").r.mean() - case.groupby("counter").r.std(),
-            case.groupby("counter").r.mean() + case.groupby("counter").r.std(),
-            alpha=0.25,
-        )
+    for df, title in zip(dfs, ["init", "reconstruction"],):
+        fig, axes = plt.subplots(2, 2)
+        fig.suptitle(title)
 
-        axis[0, 1].plot(
-            case[case.run == 0].counter, case.groupby("counter").t.mean(),
-        )
-        axis[0, 1].fill_between(
-            case[case.run == 0].counter,
-            case.groupby("counter").t.mean() - case.groupby("counter").t.std(),
-            case.groupby("counter").t.mean() + case.groupby("counter").t.std(),
-            alpha=0.25,
-        )
-
-        axis[1, 0].plot(
-            case[case.run == 0].counter, case.groupby("counter").p.mean(),
-        )
-        axis[1, 0].fill_between(
-            case[case.run == 0].counter,
-            case.groupby("counter").p.mean() - case.groupby("counter").p.std(),
-            case.groupby("counter").p.mean() + case.groupby("counter").p.std(),
-            alpha=0.25,
-        )
-
-    axis[0, 0].title.set_text("camera angle error (degrees)")
-    axis[0, 1].title.set_text("camera position error")
-    axis[1, 0].title.set_text("point position error")
-
-    fig.legend()
-
+        for column, p in zip(
+            ["cam_orientation", "cam_position", "point_position", "projection"],
+            [(0, 0), (0, 1), (1, 0), (1, 1)],
+        ):
+            sns.lineplot(
+                x="frame_number",
+                y=column,
+                data=df,
+                hue="case",
+                ax=axes[p[0], p[1]],
+                # ci=None,
+            )
     plt.show()
 
-    df.to_pickle("out/result_df.pkl")
+
+def save_data(data):
+    with open("out/ba_synthetic_data.pkl", "wb") as f:
+        pickle.dump(data, f)
+
+
+def load_data():
+    with open("out/ba_synthetic_data.pkl", "rb") as f:
+        return pickle.load(f)
+
+
+if __name__ == "__main__":
+    # data_1 = generate_data()
+    #
+    # save_data(data_1)
+
+    data_2 = load_data()
+
+    plot_data(data_2)
