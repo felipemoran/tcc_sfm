@@ -163,10 +163,17 @@ class VideoPipeline:
         frame_numbers=None,
         is_init=False,
     ):
-        online_errors = []
 
         if tracks is None:
             tracks, masks, frame_numbers = [], [], []
+
+        # Before processing any frames, calculate error metrics for current frames
+        if not is_init and self.config.error_calculation.online_calculation:
+            online_errors = self._calculate_reconstruction_errors_from_history(
+                Rs, Ts, cloud, tracks, masks, frame_numbers
+            )
+        else:
+            online_errors = []
 
         for frame_number, track_slice, index_mask in track_generator:
             tracks += [track_slice]
@@ -212,7 +219,7 @@ class VideoPipeline:
             Rs, Ts, cloud = self._run_ba(Rs, Ts, cloud, tracks, masks, True)
 
         if not is_init and self.config.error_calculation.post_calculation:
-            post_errors = self._calculate_post_reconstruction_errors(
+            post_errors = self._calculate_reconstruction_errors_from_history(
                 Rs, Ts, cloud, tracks, masks, frame_numbers
             )
         else:
@@ -316,7 +323,7 @@ class VideoPipeline:
 
         return return_slices
 
-    def _calculate_post_reconstruction_errors(
+    def _calculate_reconstruction_errors_from_history(
         self, Rs, Ts, cloud, tracks, masks, frame_numbers
     ):
         """
@@ -331,9 +338,6 @@ class VideoPipeline:
         :param frame_numbers:
         :return:
         """
-        if not self.config.error_calculation.post_calculation:
-            return []
-
         assert (
             len(Rs)
             == len(Ts)
