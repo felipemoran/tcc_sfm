@@ -1,5 +1,14 @@
-import time
+import sys
+
+sys.path.insert(
+    0, "/Users/felipemoran/Dropbox/Poli/TCC/code/sfm_python/pipeline"
+)
+sys.path.insert(0, "/Users/felipemoran/Dropbox/Poli/TCC/code/sfm_python")
+
+
+from time import time
 from functools import reduce
+from itertools import product
 
 import dacite
 import pandas as pd
@@ -7,13 +16,15 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from tqdm import tqdm
 
-from pipeline import utils
 from pipeline.config import VideoPipelineConfig
 from pipeline.synthetic_pipeline import SyntheticPipeline
 from pipeline.video_pipeline import VideoPipeline
 
 from ruamel.yaml import YAML
+from joblib import Parallel, delayed
+
 
 config_string = """
 pipeline_type: "synthetic"
@@ -29,7 +40,7 @@ synthetic_config:
         step_size: 0.5
         x_points: 5
         y_points: 5
-        z_points: 4
+        z_points: 5
 
 camera_matrix: &camera_matrix [
     [765.16859169, 0.0, 379.11876567],
@@ -110,91 +121,82 @@ solve_pnp:
 init:
 #    method: five_pt_algorithm
     error_threshold: 25
-    num_reconstruction_frames: 5
+    num_reconstruction_frames: 10
     num_error_calculation_frames: 5
 
 """
 
+case_labels = [
+    "Rolling window: OFF",
+    "Roliing window: ON",
+]
+
+
+def single_run(config_raw, case, run_index):
+
+    config = dacite.from_dict(data=config_raw, data_class=VideoPipelineConfig)
+
+    pipeline = SyntheticPipeline(config=config)
+
+    if case == 0:
+        config.bundle_adjustment.use_with_rolling_window = False
+        config.bundle_adjustment.use_at_end = True
+    elif case == 1:
+        config.bundle_adjustment.use_with_rolling_window = True
+        config.bundle_adjustment.use_at_end = True
+    else:
+        raise ValueError()
+
+    Rs, Ts, cloud, init_error, online_error, post_error = pipeline.run()
+
+    df_init_error = pd.DataFrame([x.__dict__ for x in init_error])
+    df_init_error["case"] = f"{case_labels[case]}"
+    df_init_error["run"] = run_index
+
+    df_online_error = pd.DataFrame([x.__dict__ for x in online_error])
+    df_online_error["case"] = f"{case_labels[case]}, BA at end: OFF"
+    df_online_error["run"] = run_index
+
+    df_post_error = pd.DataFrame([x.__dict__ for x in post_error])
+    df_post_error["case"] = f"{case_labels[case]}, BA at end: ON"
+    df_post_error["run"] = run_index
+
+    df_reconstruction = pd.concat([df_online_error, df_post_error])
+
+    return (df_init_error, df_reconstruction)
+
 
 def generate_data():
-    num_runs = 50
+    num_runs = 200
 
     yaml = YAML()
 
-    df_init_errors = None
-    df_online_errors = None
-    df_post_errors = None
+    config_raw = yaml.load(config_string)
 
-    case_labels = [
-        "Rolling window: OFF",
-        "Roliing window: ON",
-    ]
-
-    for case in range(len(case_labels)):
-        config_raw = yaml.load(config_string)
-        config = dacite.from_dict(
-            data=config_raw, data_class=VideoPipelineConfig
+    start = time()
+    results = Parallel(n_jobs=6)(
+        delayed(single_run)(config_raw, case, run_index)
+        for case, run_index in tqdm(
+            product(range(len(case_labels)), range(num_runs))
         )
+    )
+    print(f"Elapsed: {time()-start}")
 
-        start = time.time()
-
-        pipeline = SyntheticPipeline(config=config)
-
-        if case == 0:
-            config.bundle_adjustment.use_with_rolling_window = False
-            config.bundle_adjustment.use_at_end = True
-        elif case == 1:
-            config.bundle_adjustment.use_with_rolling_window = True
-            config.bundle_adjustment.use_at_end = True
-        else:
-            raise ValueError()
-
-        total_errors = []
-
-        for run in range(num_runs):
-            print(
-                f"--- Case {case+1}/{len(case_labels)} - Run {run + 1}/{num_runs}"
-            )
-            Rs, Ts, cloud, init_error, online_error, post_error = pipeline.run()
-
-            df_init_error = pd.DataFrame([x.__dict__ for x in init_error])
-            df_init_error["case"] = f"{case_labels[case]}"
-            df_init_error["run"] = run
-
-            df_online_error = pd.DataFrame([x.__dict__ for x in online_error])
-            df_online_error["case"] = f"{case_labels[case]}, BA at end: OFF"
-            df_online_error["run"] = run
-
-            df_post_error = pd.DataFrame([x.__dict__ for x in post_error])
-            df_post_error["case"] = f"{case_labels[case]}, BA at end: ON"
-            df_post_error["run"] = run
-
-            if df_init_error is None:
-                df_init_errors = df_init_error
-                df_online_errors = df_online_error
-                df_post_errors = df_post_error
-            else:
-                df_init_errors = pd.concat([df_init_errors, df_init_error])
-                df_online_errors = pd.concat(
-                    [df_online_errors, df_online_error]
-                )
-                df_post_errors = pd.concat([df_post_errors, df_post_error])
-
-        elapsed = time.time() - start
-        print("Elapsed {}".format(elapsed))
-
-        # utils.visualize(config.camera_matrix, Rs, Ts, cloud)
-
-        #     POST PROCESSING
-
-        df_reconstruction = pd.concat([df_online_errors, df_post_errors])
+    df_init_errors, df_reconstruction = reduce(
+        lambda a, b: (pd.concat((a[0], b[0])), pd.concat((a[1], b[1]))), results
+    )
 
     return [df_init_errors, df_reconstruction]
 
 
 def plot_data(dfs):
     plt.figure()
-    sns.barplot(x="case", y="dropped_frames", data=df_drop)
+
+    df_drop = (
+        (dfs[0].groupby(["case", "run"]).frame_number.max())
+        - dfs[0].frame_number.min()
+    ).reset_index()
+    sns.barplot(x="case", y="frame_number", data=df_drop)
 
     for df, title in zip(dfs, ["init", "reconstruction"],):
         fig, axes = plt.subplots(2, 2)
@@ -226,10 +228,8 @@ def load_data():
 
 
 if __name__ == "__main__":
-    # data_1 = generate_data()
-    #
-    # save_data(data_1)
-
+    data_1 = generate_data()
+    # data_2 = data_1
+    save_data(data_1)
     data_2 = load_data()
-
     plot_data(data_2)
