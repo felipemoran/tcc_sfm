@@ -241,7 +241,7 @@ private:
         window.showWidget("cameras_frustums", viz::WTrajectoryFrustums(path, K, .1, viz::Color::navy()));
         window.setViewerPose(path[0]);
 
-        bool show_viewer_pose = true;
+        bool show_viewer_pose = false;
         bool use_viewer_pose = false;
 
         if (!show_viewer_pose) {

@@ -41,6 +41,9 @@ def five_pt_init(config, tracks, masks):
         config.five_pt_algorithm, tracks, masks, R, T
     )
 
+    if R is None:
+        return [None] * 3
+
     points, indexes = triangulate(
         config.camera_matrix,
         R_1=Rs[-1].transpose(),
