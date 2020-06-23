@@ -6,12 +6,12 @@ import numpy as np
 import time
 import dacite
 import cv2
+from time import time
 
 from operator import itemgetter
 from ruamel.yaml import YAML
 from pipeline import utils
 from pipeline import bundle_adjustment
-from pipeline.errors import EndOfFileError
 from pipeline.reconstruction_algorithms import (
     calculate_projection,
     calculate_projection_error,
@@ -34,6 +34,7 @@ class VideoPipeline:
     def run(self):
         track_generator = self._setup(self.config.file_path)
 
+        start = time()
         (
             Rs,
             Ts,
@@ -47,7 +48,7 @@ class VideoPipeline:
 
         if cloud is None:
             # init faild
-            return None, None, None, init_errors, [], []
+            return None, None, None, init_errors, [], [], time() - start
 
         (
             Rs,
@@ -61,8 +62,17 @@ class VideoPipeline:
         ) = self._reconstruct(
             track_generator, Rs, Ts, cloud, tracks, masks, frame_numbers
         )
+        execution_time = time() - start
 
-        return Rs, Ts, cloud, init_errors, online_errors, post_errors
+        return (
+            Rs,
+            Ts,
+            cloud,
+            init_errors,
+            online_errors,
+            post_errors,
+            execution_time,
+        )
 
     def _setup(self, dir):
         file, _ = get_video(dir)
@@ -114,21 +124,21 @@ class VideoPipeline:
             error = self._calculate_init_error(
                 tracks[-config.num_error_calculation_frames :],
                 masks[-config.num_error_calculation_frames :],
-                frame_numbers[-config.num_error_calculation_frames :],
+                [frame_numbers[0]],
                 cloud,
             )
             init_errors += [error]
 
-            # print(
-            #     f"{self.config.bundle_adjustment.use_at_end},"
-            #     f"{self.config.bundle_adjustment.use_with_rolling_window},"
-            #     f"{self.config.bundle_adjustment.rolling_window.method},"
-            #     f"{self.config.synthetic_config.noise_covariance},"
-            #     f"{config.num_reconstruction_frames},"
-            #     f"{config.num_error_calculation_frames},"
-            #     f"{dropped_tracks},"
-            #     f"{error}"
-            # )
+            print(
+                f"{self.config.bundle_adjustment.use_at_end},"
+                f"{self.config.bundle_adjustment.use_with_rolling_window},"
+                f"{self.config.bundle_adjustment.rolling_window.method},"
+                f"{self.config.synthetic_config.noise_covariance},"
+                f"{config.num_reconstruction_frames},"
+                f"{config.num_error_calculation_frames},"
+                f"{dropped_tracks},"
+                f"{error}"
+            )
 
             # exit init or or drop first track/mask
             if error.projection > config.error_threshold:
@@ -213,6 +223,7 @@ class VideoPipeline:
                     cloud,
                 )
             ]
+            print(online_errors[-1])
 
         # Optimize at end, but only if it's not in init phase
         if not is_init:
@@ -338,13 +349,13 @@ class VideoPipeline:
         :param frame_numbers:
         :return:
         """
-        assert (
-            len(Rs)
-            == len(Ts)
-            == len(tracks)
-            == len(masks)
-            == len(frame_numbers)
-        )
+        # assert (
+        #     len(Rs)
+        #     == len(Ts)
+        #     == len(tracks)
+        #     == len(masks)
+        #     == len(frame_numbers)
+        # )
 
         errors = []
         for i in range(1, len(Rs) + 1):
