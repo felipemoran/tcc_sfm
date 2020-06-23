@@ -6,14 +6,14 @@ pipeline_type: "video"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/modulo_ms/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/modulo/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_1/720_30.m4v"
-#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_2/720_30.m4v"
+file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_2/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_3/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/sala_2/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/sala_3/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/quarto_1/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/pato_1/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/pato_2/720_30.m4v"
-file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/ovelha_1/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/ovelha_1/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/telefone_1/720_30.m4v"
 
 #pipeline_type: "synthetic"
@@ -47,13 +47,13 @@ klt:
     calculate_every_frame: true
     display_klt_debug_frames: true
     klt_debug_frames_delay: 1
-    frames_to_skip: 0
+    frames_to_skip: 1
     reset_period: 1
     closeness_threshold: 15
     max_features: 100
 
     corner_selection:
-        quality_level: 0.5
+        quality_level: 0.6
         min_distance: 15
         block_size: 10
 
@@ -111,6 +111,6 @@ solve_pnp:
 
 init:
 #    method: five_pt_algorithm
-    error_threshold: 1.2
+    error_threshold: 1.1
     num_reconstruction_frames: 15
     num_error_calculation_frames: 10
