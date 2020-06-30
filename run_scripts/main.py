@@ -15,14 +15,17 @@ from pipeline.video_pipeline import VideoPipeline
 from ruamel.yaml import YAML
 
 if __name__ == "__main__":
+    # instantiate YAML parser and constructor
     yaml = YAML()
 
+    # Open config file, parse it and convert it to Dataclasses
     with open("config.yaml", "r") as f:
         config_raw = yaml.load(f)
     config = dacite.from_dict(data=config_raw, data_class=VideoPipelineConfig)
 
     start = time.time()
 
+    # Depending on "source file" chooses to instantiate a video or synthetic pipeline
     if config.pipeline_type == "synthetic":
         pipeline = SyntheticPipeline(config=config)
     elif config.pipeline_type == "video":
@@ -30,6 +33,7 @@ if __name__ == "__main__":
     else:
         raise Exception("Invalid pipeline type")
 
+    # Run reconstruction
     (
         Rs,
         Ts,
@@ -43,9 +47,11 @@ if __name__ == "__main__":
     elapsed = time.time() - start
     print("Elapsed {}".format(elapsed))
 
+    # Print measured errors
     print(f"Errors: {online_errors}")
     print(f"Errors: {post_errors}")
 
+    # Convert measured errors to a pandas DataFrame
     dfs = [
         pd.DataFrame([x.__dict__ for x in errors])
         for errors in [init_errors, online_errors, post_errors]
@@ -53,6 +59,7 @@ if __name__ == "__main__":
 
     df_combined = pd.DataFrame()
 
+    # Plot results
     for df, label in zip(dfs, ["init", "online", "post"]):
         df["type"] = label
         df_combined = pd.concat([df_combined, df])
@@ -77,4 +84,6 @@ if __name__ == "__main__":
     )
 
     plt.show()
+
+    # Call point cloud and camera trajectory visualization tool
     utils.visualize(config.camera_matrix, Rs, Ts, cloud)

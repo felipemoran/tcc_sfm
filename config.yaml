@@ -1,4 +1,4 @@
-pipeline_type: "video"
+#pipeline_type: "video"
 ##file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/cubo/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/pasta_short/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/pasta_medium/720_30.m4v"
@@ -6,29 +6,46 @@ pipeline_type: "video"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/modulo_ms/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/modulo/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_1/720_30.m4v"
-file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_2/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_2/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_3/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_4/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_5/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_6/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_7/720_30.m4v"
+
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/elefante_8/720_30.m4v"
+
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/sala_2/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/sala_3/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/sala_4/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/quarto_1/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/pato_1/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/pato_2/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/ovelha_1/720_30.m4v"
 #file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/telefone_1/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/mesa_1/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/mesa_2/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/mesa_3/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/estatua_1/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/estatua_2/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/estatua_3/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/estatua_4/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/estatua_5/720_30.m4v"
+#file_path: "/Users/felipemoran/Dropbox/Poli/TCC/datasets/estatua_6/720_30.m4v"
 
-#pipeline_type: "synthetic"
+pipeline_type: "synthetic"
 #file_path: "1"
 #file_path: "2"
-#file_path: "3"
+file_path: "3"
 
 synthetic_config:
-    noise_covariance: 20
+    noise_covariance: 5
     number_of_cameras: 2500
 
     case_3:
         radius: 5
         number_of_cameras: 50
-        step_size: 0.8
+        step_size: 0.5
         x_points: 5
         y_points: 5
         z_points: 4
@@ -53,7 +70,7 @@ klt:
     max_features: 100
 
     corner_selection:
-        quality_level: 0.6
+        quality_level: 0.5
         min_distance: 15
         block_size: 10
 
@@ -81,7 +98,7 @@ bundle_adjustment:
     verbose: 0
     camera_matrix: *camera_matrix
 
-    use_with_rolling_window: true
+    use_with_rolling_window: false
     rolling_window:
         method: growing_step
         period: 1 # in number of processed frame
@@ -92,7 +109,7 @@ bundle_adjustment:
 #        period: 5 # in number of processed frame
 #        length: 10 # number of frames in the window taking step into account
 #        step: 1 # step=N means taking 1 every N frames
-    use_at_end: false
+    use_at_end: true
 
 five_pt_algorithm:
     min_number_of_points: 6
@@ -110,7 +127,6 @@ solve_pnp:
     use_iterative_pnp: true
 
 init:
-#    method: five_pt_algorithm
-    error_threshold: 1.1
-    num_reconstruction_frames: 15
-    num_error_calculation_frames: 10
+    error_threshold: 50
+    num_reconstruction_frames: 5
+    num_error_calculation_frames: 5

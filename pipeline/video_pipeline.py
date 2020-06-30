@@ -24,6 +24,11 @@ from pipeline.config import VideoPipelineConfig
 
 
 class VideoPipeline:
+    """
+    Main class used for reconstruction. It orchestrates the other components of the
+    pipeline and interfaces with the user
+    """
+
     def __init__(self, config: VideoPipelineConfig,) -> None:
         self.config = config
 
@@ -32,6 +37,18 @@ class VideoPipeline:
         # self.config.camera_matrix = np.array(self.config.camera_matrix)
 
     def run(self):
+        """
+        Given a set of config parameters passed at init this function runs and returns
+        the reconstruction alongside with some error measurements
+        :return: (
+            Rs: list of rotation matrices from reconstructed cameras
+            Ts: list of translation vectors from reconstructed cameras
+            cloud: reconstruction point cloud
+            init_errors: errors calculated during reconstruction init phase
+            online_errors: errors calculated during reconstruction
+            post_errors: errors calculated after reconstruction is finished
+            execution_time: how many second it took to run the pipeline (wall time)
+        """
         track_generator = self._setup(self.config.file_path)
 
         start = time()
@@ -75,15 +92,54 @@ class VideoPipeline:
         )
 
     def _setup(self, dir):
+        """
+        Instantiated frame generator
+
+        This function is separated from run() so that child classes can modify it
+        easily
+
+        :param dir: filepath of video file
+        :return: generator of raw frames
+        """
         file, _ = get_video(dir)
         track_generator = klt_generator(self.config.klt, file)
         return track_generator
 
     def _init_reconstruction(self, track_generator):
         """
+        Runs initial reconstruction phase for a given track generator
 
-        @param track_generator: teste
-        @return: return description
+        It loades K + P frames, feed the first K frames to the reconstruction
+        function for a initial reconstruction attempt then uses the other P
+        frames for error calculation with out of sample frames.
+
+        If calculated error is below threshold it adds back those frames used
+        for error calculation back to generator and return the reconstruction result.
+
+        If calculated error is above threshold it drops the first frame, load a
+        new one and repeats everything.
+
+        :param track_generator: generator of tracks. Each item is of the form
+            (
+                frame_number: number of frame, monotonically increasing
+                features: list of tuples with each feature location
+                indexes: list of indexes for each returned features. These indexes
+                are a global non repeating number corresponding to each feature
+                and can be used to uniquely reference a reconstructed point
+            )
+
+        :return: (
+            Rs: list of rotation matrices from reconstructed cameras
+            Ts: list of translation vectors from reconstructed cameras
+            cloud: reconstruction point cloud
+            init_errors: errors calculated during reconstruction init phase
+            tracks: tracks used for reconstruction
+            masks: masks used for reconstruction
+            frame_numbers: indexes of frames used for reconstruction
+            track_generator: same track generator as the one from the input but
+            with reconstruction and dropped frames removed
+            init_errors: errors calculated during init phase
+        )
         """
         config = self.config.init
 
@@ -173,6 +229,33 @@ class VideoPipeline:
         frame_numbers=None,
         is_init=False,
     ):
+        """
+        This is the main reconstruction function, both for the init and
+        increments reconstruction phases.
+
+        If a partial reconstruction (with the variables Rs, Ts, cloud, tracks,
+        masks, frame_numbers not None and is_init=False) it continues the reconstruction,
+        otherwise it begins one from scratch.
+
+        :param track_generator: generator of features, indexes and frame number
+        :param cloud: point cloud with N points as a ndarray with shape Nx3
+        :param Rs: list of R matrices used for initial reconstruction
+        :param Ts: list of T vectors used for initial reconstruction
+        :param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+        :param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+        :param frame_numbers: list of frame indexes/numbers used for initial reconstruction
+        :param is_init: flag inficating if it's in the initial reconstruction phase
+        :return: (
+            Rs: list of rotation matrix
+            Ts: list of translation vectors
+            cloud: list of reconstructed 3d points
+            tracks: list of tracks
+            masks: list of trac masks
+            frame_numbers: list of frame numbers
+            online_errors: list of errors calculated during reconstruction
+            post_errors: list of errors calculated after reconstruction is finished
+        )
+        """
 
         if tracks is None:
             tracks, masks, frame_numbers = [], [], []
@@ -371,6 +454,17 @@ class VideoPipeline:
         return errors
 
     def _run_ba(self, Rs, Ts, cloud, tracks, masks, final_frame=False):
+        """
+        Decides if the Bundle Adjustment step must be run and with how much data.
+
+        :param Rs:
+        :param Ts:
+        :param cloud:
+        :param tracks:
+        :param masks:
+        :param final_frame:
+        :return:
+        """
 
         config = self.config.bundle_adjustment
 

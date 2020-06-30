@@ -22,7 +22,14 @@ def klt_generator(config, file):
 
     :param config: config object. See config.py for more information
     :param file: video file object
-    :return: yields a vector of features and corresponding indexes
+    :return: generator of tracks. Each item is of the form
+        (
+            frame_number: number of frame, monotonically increasing
+            features: list of tuples with each feature location
+            indexes: list of indexes for each returned features. These indexes
+            are a global non repeating number corresponding to each feature
+            and can be used to uniquely reference a reconstructed point
+        )
     """
 
     reset_features = True
@@ -135,7 +142,7 @@ def track_features(bw_frame, config, indexes, prev_features, prev_frame):
         ),
     )
     status = status.squeeze().astype(np.bool)
-    indexes = indexes[status]
+    indexes = indexes[status].reshape((-1,))
     features = features.squeeze()[status]
     return features, indexes
 
@@ -190,6 +197,16 @@ def match_features(
 
 
 def choose_old_features(closeness_table, points_to_keep):
+    """
+    Based on the number of close features (from closeness_table) it chooses which features
+    to keep and which to discard
+
+    :param closeness_table: table of 0s and 1s where a 1 indicates that the ith point
+    from the old feature set is close enough to the jth point from the new feature set
+    :param points_to_keep: number of points from old feature set to keep
+    :return: mask of bools indicating which features to keep
+    """
+
     mask = np.full(closeness_table.shape[0], False)
     indexes = np.empty([0], dtype=int)
     table_sum = closeness_table.sum(axis=1)
@@ -224,6 +241,17 @@ def choose_old_features(closeness_table, points_to_keep):
 
 
 def get_close_points_table(new_features, old_features, threshold):
+    """
+    Generated the closeness table of 0s and 1s where a 1 indicates that the ith point
+    from the old feature set is close enough to the jth point from the new feature set.
+
+    The size of the table is len(old_features) lines and len(new_features) columns.
+
+    :param new_features: list of new features to track
+    :param old_features: list of old features to track
+    :param threshold: distance (in pixels) below which two points are considered close
+    :return:
+    """
     old_repeated = np.repeat(
         old_features, new_features.shape[0], axis=0
     ).reshape((old_features.shape[0], new_features.shape[0], 2))
@@ -238,6 +266,14 @@ def get_close_points_table(new_features, old_features, threshold):
 
 
 def frame_getter(file, frames_to_skip):
+    """
+    Gets a frame from file, skips frames_to_skip times and returns the color and
+    grayscale version of next frame
+
+    :param file: video file
+    :param frames_to_skip: number of frames to skip between returned frames
+    :return: original video frame and grayscale version
+    """
     while True:
         for _ in range(frames_to_skip + 1):
             ret, color_frame = file.read()
@@ -248,6 +284,12 @@ def frame_getter(file, frames_to_skip):
 
 
 def get_video(file_path):
+    """
+    Loads file from file_path
+
+    :param file_path:
+    :return:
+    """
     # print("Looking for files in {}".format(dir))
 
     assert path.isfile(file_path), "Invalid file location"
@@ -261,6 +303,16 @@ def get_video(file_path):
 def display_klt_debug_frame(
     color_frame, features, prev_features, indexes, delay
 ):
+    """
+    Display a frame and colored dots indicating which features are being tracked
+
+    :param color_frame: original frame
+    :param features: list of features being tracked
+    :param prev_features: list of previous feature positions
+    :param indexes: list of featue indexes
+    :param delay: wait time before exiting visualization
+    :return: None
+    """
     mask = np.zeros_like(color_frame)
 
     for feature, prev_feature, index in zip(features, prev_features, indexes):
