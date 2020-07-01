@@ -1,0 +1,228 @@
+\hypertarget{namespacepipeline_1_1reconstruction__algorithms}{}\doxysection{pipeline.\+reconstruction\+\_\+algorithms Namespace Reference}
+\label{namespacepipeline_1_1reconstruction__algorithms}\index{pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1reconstruction__algorithms_a7e9681e59e853d70f0fee2e8ef69c7f3}{\+\_\+solve\+\_\+pnp}} (config, track\+\_\+slice, track\+\_\+mask, cloud, R=None, T=None, method=None)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1reconstruction__algorithms_aba2f11bb59445d22c2cd00e1cae4d0d3}{solve\+\_\+pnp}} (config, track, mask, cloud, R=None, T=None)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1reconstruction__algorithms_a8225b01aca333e4c26e92480d26cb0f7}{five\+\_\+pt}} (config, tracks, masks, prev\+\_\+R, prev\+\_\+T)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1reconstruction__algorithms_abad2530cdcf777ed8db1f078b19f8320}{refine\+\_\+track}} (E, config, five\+\_\+pt\+\_\+mask, masks, pair\+\_\+mask, track\+\_\+pair, tracks)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1reconstruction__algorithms_ab57c5882d876ac091b0e18b202294af9}{triangulate}} (camera\+\_\+matrix, R\+\_\+1, T\+\_\+1, R\+\_\+2, T\+\_\+2, tracks, masks)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1reconstruction__algorithms_aedff01306e1ee794ca1937b7fffdd4d2}{calculate\+\_\+projection}} (config, tracks, masks, prev\+\_\+R, prev\+\_\+T, cloud)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1reconstruction__algorithms_a3ad644a83287dd39d4343d87d88d63f8}{calculate\+\_\+projection\+\_\+error}} (camera\+\_\+matrix, Rs, Ts, cloud, tracks, masks, mean=False)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespacepipeline_1_1reconstruction__algorithms_a7e9681e59e853d70f0fee2e8ef69c7f3}\label{namespacepipeline_1_1reconstruction__algorithms_a7e9681e59e853d70f0fee2e8ef69c7f3}} 
+\index{pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}!\_solve\_pnp@{\_solve\_pnp}}
+\index{\_solve\_pnp@{\_solve\_pnp}!pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}}
+\doxysubsubsection{\texorpdfstring{\_solve\_pnp()}{\_solve\_pnp()}}
+{\footnotesize\ttfamily def pipeline.\+reconstruction\+\_\+algorithms.\+\_\+solve\+\_\+pnp (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{track\+\_\+slice,  }\item[{}]{track\+\_\+mask,  }\item[{}]{cloud,  }\item[{}]{R = {\ttfamily None},  }\item[{}]{T = {\ttfamily None},  }\item[{}]{method = {\ttfamily None} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Adaptation of the SolvePnP algorithm for a new track slice (frame) and existing point cloud.
+
+It calculates the new frame's rotation matrix and translation vector based on an existing
+point cloud. If the method to be used is SOLVEPNP_ITERATIVE an initial guess of R and T can
+also be supplied
+
+:param config: config object. See config.py for more information
+:param track_slice: 2 column matrix with 2D features
+:param track_mask: point cloud indexes for features in the track slice
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:param R: rotation matrix seed
+:param T: translation vector seed
+:param method: method to be used in the algorithm
+:return: new frame's rotation matrix and translation vector
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_a7e9681e59e853d70f0fee2e8ef69c7f3_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1reconstruction__algorithms_aedff01306e1ee794ca1937b7fffdd4d2}\label{namespacepipeline_1_1reconstruction__algorithms_aedff01306e1ee794ca1937b7fffdd4d2}} 
+\index{pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}!calculate\_projection@{calculate\_projection}}
+\index{calculate\_projection@{calculate\_projection}!pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}}
+\doxysubsubsection{\texorpdfstring{calculate\_projection()}{calculate\_projection()}}
+{\footnotesize\ttfamily def pipeline.\+reconstruction\+\_\+algorithms.\+calculate\+\_\+projection (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{prev\+\_\+R,  }\item[{}]{prev\+\_\+T,  }\item[{}]{cloud }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Bundle up toguether above algorithms for the calculation of a camera's postion in space and
+3D position of detected features
+
+:param config: config object. See config.py for more information
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:param prev_R: previous camera's rotation matrix in the global reference frame
+:param prev_T: previous camera's translation vector in the global reference frame
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:return: rotation and translation of new camera and calculated 3D points with their indexes
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_aedff01306e1ee794ca1937b7fffdd4d2_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_aedff01306e1ee794ca1937b7fffdd4d2_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1reconstruction__algorithms_a3ad644a83287dd39d4343d87d88d63f8}\label{namespacepipeline_1_1reconstruction__algorithms_a3ad644a83287dd39d4343d87d88d63f8}} 
+\index{pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}!calculate\_projection\_error@{calculate\_projection\_error}}
+\index{calculate\_projection\_error@{calculate\_projection\_error}!pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}}
+\doxysubsubsection{\texorpdfstring{calculate\_projection\_error()}{calculate\_projection\_error()}}
+{\footnotesize\ttfamily def pipeline.\+reconstruction\+\_\+algorithms.\+calculate\+\_\+projection\+\_\+error (\begin{DoxyParamCaption}\item[{}]{camera\+\_\+matrix,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{cloud,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{mean = {\ttfamily False} }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Calculates the projection error of a given set of frames a point cloud. Resulting metric is
+deviation in number of pixels averaged for each feature in each frame
+
+:param Rs: list of R matrices
+:param Ts: list of T vectors
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:param mean: flag to indicate if return should be the mean of all values
+:return: list of vectors with deviation in pixels between measurement and projection
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_a3ad644a83287dd39d4343d87d88d63f8_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1reconstruction__algorithms_a8225b01aca333e4c26e92480d26cb0f7}\label{namespacepipeline_1_1reconstruction__algorithms_a8225b01aca333e4c26e92480d26cb0f7}} 
+\index{pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}!five\_pt@{five\_pt}}
+\index{five\_pt@{five\_pt}!pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}}
+\doxysubsubsection{\texorpdfstring{five\_pt()}{five\_pt()}}
+{\footnotesize\ttfamily def pipeline.\+reconstruction\+\_\+algorithms.\+five\+\_\+pt (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{prev\+\_\+R,  }\item[{}]{prev\+\_\+T }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Adaptation of five point routine.
+
+It first calculates the relative movement of camreta 2 in respect of camera 1 applying the
+necessary masks, then converts the result to camera 1 reference frame, which can be the
+camera 1's reference frame relative to camera 0's or global's
+
+:param config: config object. See config.py for more information
+:param track_slice: 2 column matrix with 2D features
+:param track_mask: point cloud indexes for features in the track slice
+:param prev_R: camera 1's rotation matrix
+:param prev_T: camera 1's translation matrix
+:return: rotation and translation of new camera and calculated 3D points with their indexes
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_a8225b01aca333e4c26e92480d26cb0f7_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_a8225b01aca333e4c26e92480d26cb0f7_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1reconstruction__algorithms_abad2530cdcf777ed8db1f078b19f8320}\label{namespacepipeline_1_1reconstruction__algorithms_abad2530cdcf777ed8db1f078b19f8320}} 
+\index{pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}!refine\_track@{refine\_track}}
+\index{refine\_track@{refine\_track}!pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}}
+\doxysubsubsection{\texorpdfstring{refine\_track()}{refine\_track()}}
+{\footnotesize\ttfamily def pipeline.\+reconstruction\+\_\+algorithms.\+refine\+\_\+track (\begin{DoxyParamCaption}\item[{}]{E,  }\item[{}]{config,  }\item[{}]{five\+\_\+pt\+\_\+mask,  }\item[{}]{masks,  }\item[{}]{pair\+\_\+mask,  }\item[{}]{track\+\_\+pair,  }\item[{}]{tracks }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Refines a track (vector of features) by imposing some epipolar constraints
+
+:param E: essential matrix
+:param config: config object. See config.py for more information
+:param five_pt_mask: binary mask for points kept after 5 pt algorithm
+:param masks: original track masks containing list of index masks for each feature vector.
+Indexes refer to the position of the item in the cloud
+:param pair_mask: combined mask for pair of tracks
+:param track_pair: list of 2D feature vectors where each feature is present in both tracks
+:param tracks: original tracks of features
+:return: refined essential matrix, five pt mask and track pair
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_abad2530cdcf777ed8db1f078b19f8320_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1reconstruction__algorithms_aba2f11bb59445d22c2cd00e1cae4d0d3}\label{namespacepipeline_1_1reconstruction__algorithms_aba2f11bb59445d22c2cd00e1cae4d0d3}} 
+\index{pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}!solve\_pnp@{solve\_pnp}}
+\index{solve\_pnp@{solve\_pnp}!pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}}
+\doxysubsubsection{\texorpdfstring{solve\_pnp()}{solve\_pnp()}}
+{\footnotesize\ttfamily def pipeline.\+reconstruction\+\_\+algorithms.\+solve\+\_\+pnp (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{track,  }\item[{}]{mask,  }\item[{}]{cloud,  }\item[{}]{R = {\ttfamily None},  }\item[{}]{T = {\ttfamily None} }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Wrapper for _solve_pnp where the method is chosen automatically
+
+:param config: config object. See config.py for more information
+:param track_slice: 2 column matrix with 2D features
+:param track_mask: point cloud indexes for features in the track slice
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:param R: rotation matrix seed
+:param T: translation vector seed
+:param method: method to be used in the algorithm
+:return: new frame's rotation matrix and translation vector
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_aba2f11bb59445d22c2cd00e1cae4d0d3_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_aba2f11bb59445d22c2cd00e1cae4d0d3_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1reconstruction__algorithms_ab57c5882d876ac091b0e18b202294af9}\label{namespacepipeline_1_1reconstruction__algorithms_ab57c5882d876ac091b0e18b202294af9}} 
+\index{pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}!triangulate@{triangulate}}
+\index{triangulate@{triangulate}!pipeline.reconstruction\_algorithms@{pipeline.reconstruction\_algorithms}}
+\doxysubsubsection{\texorpdfstring{triangulate()}{triangulate()}}
+{\footnotesize\ttfamily def pipeline.\+reconstruction\+\_\+algorithms.\+triangulate (\begin{DoxyParamCaption}\item[{}]{camera\+\_\+matrix,  }\item[{}]{R\+\_\+1,  }\item[{}]{T\+\_\+1,  }\item[{}]{R\+\_\+2,  }\item[{}]{T\+\_\+2,  }\item[{}]{tracks,  }\item[{}]{masks }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Calculates features' 3D locations based on their 2D projections and rotation matrices and
+translation vectors of both cameras
+
+:param camera_matrix: calibration matrix
+:param R_1: rotation matrix of camera 1
+:param T_1: translation vector of camamera 1
+:param R_2: rotation matrix of camera 2
+:param T_2: translation vector of camamera 2
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:return: calculated 3D points and their indexes
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1reconstruction__algorithms_ab57c5882d876ac091b0e18b202294af9_icgraph}
+\end{center}
+\end{figure}

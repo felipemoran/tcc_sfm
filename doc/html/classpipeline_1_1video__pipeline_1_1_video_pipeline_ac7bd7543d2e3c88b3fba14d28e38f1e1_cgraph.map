@@ -1,0 +1,7 @@
+<map id="pipeline.video_pipeline.VideoPipeline._calculate_reconstruction_errors_from_history" name="pipeline.video_pipeline.VideoPipeline._calculate_reconstruction_errors_from_history">
+<area shape="rect" id="node1" title=" " alt="" coords="5,81,194,157"/>
+<area shape="rect" id="node2" href="$classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline.html#a8d19aa07e484c76d7b1a6eb70c6f89fe" title=" " alt="" coords="242,5,450,65"/>
+<area shape="rect" id="node4" href="$classpipeline_1_1video__pipeline_1_1_video_pipeline.html#af722585b7cab69620ed3cecf8db7c8e1" title=" " alt="" coords="263,89,429,149"/>
+<area shape="rect" id="node5" href="$classpipeline_1_1video__pipeline_1_1_video_pipeline.html#a55c0fe48d55ae8eba033612d9394505e" title=" " alt="" coords="255,173,437,233"/>
+<area shape="rect" id="node3" href="$namespacepipeline_1_1reconstruction__algorithms.html#a3ad644a83287dd39d4343d87d88d63f8" title=" " alt="" coords="498,48,653,108"/>
+</map>

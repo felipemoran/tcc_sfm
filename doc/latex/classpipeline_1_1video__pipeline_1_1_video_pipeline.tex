@@ -1,0 +1,398 @@
+\hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline}{}\doxysection{pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline Class Reference}
+\label{classpipeline_1_1video__pipeline_1_1_video_pipeline}\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+
+
+Inheritance diagram for pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=215pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline__inherit__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+None \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_a8fb1eb7ac1d225039214ea6f47bf0d5c}{\+\_\+\+\_\+init\+\_\+\+\_\+}} (self, \mbox{\hyperlink{classpipeline_1_1config_1_1_video_pipeline_config}{Video\+Pipeline\+Config}} \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_aa1cd6c39b496103f866cd0a7a6fe232d}{config}})
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_a5d3491067b0d4c0442b8e335d06424e1}{run}} (self)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_aa1cd6c39b496103f866cd0a7a6fe232d}{config}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_a2f9bd9f95d9236b26dd175e9a36935e3}{\+\_\+setup}} (self, dir)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_aede7542e6f79bbd82fcb43663baea467}{\+\_\+init\+\_\+reconstruction}} (self, track\+\_\+generator)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_a6e06a73174a28e49d18372f76e361626}{\+\_\+reconstruct}} (self, track\+\_\+generator, Rs=None, Ts=None, cloud=None, tracks=None, masks=None, frame\+\_\+numbers=None, is\+\_\+init=False)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_affefbd1d9b49b339f512342c8b1a8005}{\+\_\+calculate\+\_\+init\+\_\+error}} (self, tracks, masks, frame\+\_\+numbers, cloud)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_af722585b7cab69620ed3cecf8db7c8e1}{\+\_\+calculate\+\_\+reconstruction\+\_\+error}} (self, Rs, Ts, tracks, masks, frame\+\_\+numbers, cloud)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_a55c0fe48d55ae8eba033612d9394505e}{\+\_\+select\+\_\+reconstruction\+\_\+error\+\_\+data}} (self, Rs, Ts, tracks, masks, frame\+\_\+numbers)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_ac7bd7543d2e3c88b3fba14d28e38f1e1}{\+\_\+calculate\+\_\+reconstruction\+\_\+errors\+\_\+from\+\_\+history}} (self, Rs, Ts, cloud, tracks, masks, frame\+\_\+numbers)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_ae0eeb5877accc5c2b121bff8b503fb5b}{\+\_\+run\+\_\+ba}} (self, Rs, Ts, cloud, tracks, masks, final\+\_\+frame=False)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_a07d28c4568a1494149662298cbab7742}{\+\_\+first\+\_\+reconstruction\+\_\+frame\+\_\+number}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}Main class used for reconstruction. It orchestrates the other components of the
+pipeline and interfaces with the user
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_a8fb1eb7ac1d225039214ea6f47bf0d5c}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_a8fb1eb7ac1d225039214ea6f47bf0d5c}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_\_init\_\_@{\_\_init\_\_}}
+\index{\_\_init\_\_@{\_\_init\_\_}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_\_init\_\_()}{\_\_init\_\_()}}
+{\footnotesize\ttfamily  None pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+\+\_\+init\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{\mbox{\hyperlink{classpipeline_1_1config_1_1_video_pipeline_config}{Video\+Pipeline\+Config}}}]{config }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_affefbd1d9b49b339f512342c8b1a8005}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_affefbd1d9b49b339f512342c8b1a8005}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_calculate\_init\_error@{\_calculate\_init\_error}}
+\index{\_calculate\_init\_error@{\_calculate\_init\_error}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_calculate\_init\_error()}{\_calculate\_init\_error()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+calculate\+\_\+init\+\_\+error (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{frame\+\_\+numbers,  }\item[{}]{cloud }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Calculates the projection error for a set of frames given some init
+ conditions.
+
+It calculates the error by first calculating the expected rotation and
+translation followed by the resulting 2D projection of this pose and
+then comparing it with the original track slice.
+
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:param frame_numbers: list of indexes for each track in tracks
+:param cloud: actual point cloud
+:return: mean error
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_affefbd1d9b49b339f512342c8b1a8005_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_affefbd1d9b49b339f512342c8b1a8005_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_af722585b7cab69620ed3cecf8db7c8e1}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_af722585b7cab69620ed3cecf8db7c8e1}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_calculate\_reconstruction\_error@{\_calculate\_reconstruction\_error}}
+\index{\_calculate\_reconstruction\_error@{\_calculate\_reconstruction\_error}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_calculate\_reconstruction\_error()}{\_calculate\_reconstruction\_error()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+calculate\+\_\+reconstruction\+\_\+error (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{frame\+\_\+numbers,  }\item[{}]{cloud }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}:param Rs: list of R matrices
+:param Ts: list of T vectors
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:param frame_numbers: list of indexes for each track in tracks
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:return:
+\end{DoxyVerb}
+ 
+
+Reimplemented in \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a8d19aa07e484c76d7b1a6eb70c6f89fe}{pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline}}.
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_af722585b7cab69620ed3cecf8db7c8e1_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_af722585b7cab69620ed3cecf8db7c8e1_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_ac7bd7543d2e3c88b3fba14d28e38f1e1}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_ac7bd7543d2e3c88b3fba14d28e38f1e1}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_calculate\_reconstruction\_errors\_from\_history@{\_calculate\_reconstruction\_errors\_from\_history}}
+\index{\_calculate\_reconstruction\_errors\_from\_history@{\_calculate\_reconstruction\_errors\_from\_history}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_calculate\_reconstruction\_errors\_from\_history()}{\_calculate\_reconstruction\_errors\_from\_history()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+calculate\+\_\+reconstruction\+\_\+errors\+\_\+from\+\_\+history (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{cloud,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{frame\+\_\+numbers }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Similar to calculate_reconstruction_error but it calculates errors
+after all reconstruction.
+
+:param Rs:
+:param Ts:
+:param cloud:
+:param tracks:
+:param masks:
+:param frame_numbers:
+:return:
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_ac7bd7543d2e3c88b3fba14d28e38f1e1_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_ac7bd7543d2e3c88b3fba14d28e38f1e1_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_aede7542e6f79bbd82fcb43663baea467}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_aede7542e6f79bbd82fcb43663baea467}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_init\_reconstruction@{\_init\_reconstruction}}
+\index{\_init\_reconstruction@{\_init\_reconstruction}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_init\_reconstruction()}{\_init\_reconstruction()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+init\+\_\+reconstruction (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{track\+\_\+generator }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Runs initial reconstruction phase for a given track generator
+
+It loades K + P frames, feed the first K frames to the reconstruction
+function for a initial reconstruction attempt then uses the other P
+frames for error calculation with out of sample frames.
+
+If calculated error is below threshold it adds back those frames used
+for error calculation back to generator and return the reconstruction result.
+
+If calculated error is above threshold it drops the first frame, load a
+new one and repeats everything.
+
+:param track_generator: generator of tracks. Each item is of the form
+    (
+frame_number: number of frame, monotonically increasing
+features: list of tuples with each feature location
+indexes: list of indexes for each returned features. These indexes
+are a global non repeating number corresponding to each feature
+and can be used to uniquely reference a reconstructed point
+    )
+
+:return: (
+    Rs: list of rotation matrices from reconstructed cameras
+    Ts: list of translation vectors from reconstructed cameras
+    cloud: reconstruction point cloud
+    init_errors: errors calculated during reconstruction init phase
+    tracks: tracks used for reconstruction
+    masks: masks used for reconstruction
+    frame_numbers: indexes of frames used for reconstruction
+    track_generator: same track generator as the one from the input but
+    with reconstruction and dropped frames removed
+    init_errors: errors calculated during init phase
+)
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_aede7542e6f79bbd82fcb43663baea467_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_aede7542e6f79bbd82fcb43663baea467_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_a6e06a73174a28e49d18372f76e361626}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_a6e06a73174a28e49d18372f76e361626}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_reconstruct@{\_reconstruct}}
+\index{\_reconstruct@{\_reconstruct}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_reconstruct()}{\_reconstruct()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+reconstruct (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{track\+\_\+generator,  }\item[{}]{Rs = {\ttfamily None},  }\item[{}]{Ts = {\ttfamily None},  }\item[{}]{cloud = {\ttfamily None},  }\item[{}]{tracks = {\ttfamily None},  }\item[{}]{masks = {\ttfamily None},  }\item[{}]{frame\+\_\+numbers = {\ttfamily None},  }\item[{}]{is\+\_\+init = {\ttfamily False} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}This is the main reconstruction function, both for the init and
+increments reconstruction phases.
+
+If a partial reconstruction (with the variables Rs, Ts, cloud, tracks,
+masks, frame_numbers not None and is_init=False) it continues the reconstruction,
+otherwise it begins one from scratch.
+
+:param track_generator: generator of features, indexes and frame number
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:param Rs: list of R matrices used for initial reconstruction
+:param Ts: list of T vectors used for initial reconstruction
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:param frame_numbers: list of frame indexes/numbers used for initial reconstruction
+:param is_init: flag inficating if it's in the initial reconstruction phase
+:return: (
+    Rs: list of rotation matrix
+    Ts: list of translation vectors
+    cloud: list of reconstructed 3d points
+    tracks: list of tracks
+    masks: list of trac masks
+    frame_numbers: list of frame numbers
+    online_errors: list of errors calculated during reconstruction
+    post_errors: list of errors calculated after reconstruction is finished
+)
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_a6e06a73174a28e49d18372f76e361626_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_a6e06a73174a28e49d18372f76e361626_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_ae0eeb5877accc5c2b121bff8b503fb5b}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_ae0eeb5877accc5c2b121bff8b503fb5b}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_run\_ba@{\_run\_ba}}
+\index{\_run\_ba@{\_run\_ba}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_run\_ba()}{\_run\_ba()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+run\+\_\+ba (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{cloud,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{final\+\_\+frame = {\ttfamily False} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Decides if the Bundle Adjustment step must be run and with how much data.
+
+:param Rs:
+:param Ts:
+:param cloud:
+:param tracks:
+:param masks:
+:param final_frame:
+:return:
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_ae0eeb5877accc5c2b121bff8b503fb5b_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_a55c0fe48d55ae8eba033612d9394505e}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_a55c0fe48d55ae8eba033612d9394505e}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_select\_reconstruction\_error\_data@{\_select\_reconstruction\_error\_data}}
+\index{\_select\_reconstruction\_error\_data@{\_select\_reconstruction\_error\_data}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_select\_reconstruction\_error\_data()}{\_select\_reconstruction\_error\_data()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+select\+\_\+reconstruction\+\_\+error\+\_\+data (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{frame\+\_\+numbers }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Selects data to be used on reconstruction error calculation. Returns
+slices of inputs.
+
+:param Rs: list of R matrices
+:param Ts: list of T vectors
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:param frame_numbers: list of indexes for each track in tracks
+:return: slices of inputs with items to be used for calculation
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_a55c0fe48d55ae8eba033612d9394505e_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_a2f9bd9f95d9236b26dd175e9a36935e3}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_a2f9bd9f95d9236b26dd175e9a36935e3}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_setup@{\_setup}}
+\index{\_setup@{\_setup}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_setup()}{\_setup()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+setup (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{dir }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Instantiated frame generator
+
+This function is separated from run() so that child classes can modify it
+easily
+
+:param dir: filepath of video file
+:return: generator of raw frames
+\end{DoxyVerb}
+ 
+
+Reimplemented in \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_aa30b7040698704e448c17eacccde8cc6}{pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline}}.
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_a2f9bd9f95d9236b26dd175e9a36935e3_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_a2f9bd9f95d9236b26dd175e9a36935e3_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_a5d3491067b0d4c0442b8e335d06424e1}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_a5d3491067b0d4c0442b8e335d06424e1}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!run@{run}}
+\index{run@{run}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{run()}{run()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+run (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Given a set of config parameters passed at init this function runs and returns
+the reconstruction alongside with some error measurements
+:return: (
+    Rs: list of rotation matrices from reconstructed cameras
+    Ts: list of translation vectors from reconstructed cameras
+    cloud: reconstruction point cloud
+    init_errors: errors calculated during reconstruction init phase
+    online_errors: errors calculated during reconstruction
+    post_errors: errors calculated after reconstruction is finished
+    execution_time: how many second it took to run the pipeline (wall time)
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1video__pipeline_1_1_video_pipeline_a5d3491067b0d4c0442b8e335d06424e1_cgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_a07d28c4568a1494149662298cbab7742}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_a07d28c4568a1494149662298cbab7742}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!\_first\_reconstruction\_frame\_number@{\_first\_reconstruction\_frame\_number}}
+\index{\_first\_reconstruction\_frame\_number@{\_first\_reconstruction\_frame\_number}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{\_first\_reconstruction\_frame\_number}{\_first\_reconstruction\_frame\_number}}
+{\footnotesize\ttfamily pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+\_\+first\+\_\+reconstruction\+\_\+frame\+\_\+number\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classpipeline_1_1video__pipeline_1_1_video_pipeline_aa1cd6c39b496103f866cd0a7a6fe232d}\label{classpipeline_1_1video__pipeline_1_1_video_pipeline_aa1cd6c39b496103f866cd0a7a6fe232d}} 
+\index{pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}!config@{config}}
+\index{config@{config}!pipeline.video\_pipeline.VideoPipeline@{pipeline.video\_pipeline.VideoPipeline}}
+\doxysubsubsection{\texorpdfstring{config}{config}}
+{\footnotesize\ttfamily pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline.\+config}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+pipeline/\mbox{\hyperlink{video__pipeline_8py}{video\+\_\+pipeline.\+py}}\end{DoxyCompactItemize}

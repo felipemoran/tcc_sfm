@@ -1,0 +1,16 @@
+<map id="pipeline.video_pipeline.VideoPipeline._reconstruct" name="pipeline.video_pipeline.VideoPipeline._reconstruct">
+<area shape="rect" id="node1" title=" " alt="" coords="5,207,185,251"/>
+<area shape="rect" id="node2" href="$classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline.html#a8d19aa07e484c76d7b1a6eb70c6f89fe" title=" " alt="" coords="470,5,678,65"/>
+<area shape="rect" id="node4" href="$classpipeline_1_1video__pipeline_1_1_video_pipeline.html#af722585b7cab69620ed3cecf8db7c8e1" title=" " alt="" coords="491,89,657,149"/>
+<area shape="rect" id="node5" href="$classpipeline_1_1video__pipeline_1_1_video_pipeline.html#ac7bd7543d2e3c88b3fba14d28e38f1e1" title=" " alt="" coords="233,115,422,191"/>
+<area shape="rect" id="node6" href="$classpipeline_1_1video__pipeline_1_1_video_pipeline.html#a55c0fe48d55ae8eba033612d9394505e" title=" " alt="" coords="483,181,665,241"/>
+<area shape="rect" id="node7" href="$classpipeline_1_1video__pipeline_1_1_video_pipeline.html#ae0eeb5877accc5c2b121bff8b503fb5b" title=" " alt="" coords="248,267,408,311"/>
+<area shape="rect" id="node8" href="$namespacepipeline_1_1reconstruction__algorithms.html#aedff01306e1ee794ca1937b7fffdd4d2" title=" " alt="" coords="250,403,405,463"/>
+<area shape="rect" id="node14" href="$namespacepipeline_1_1init__algorithms.html#a6fc14c95f4aab4ee6b08485c96d3527e" title=" " alt="" coords="237,335,418,379"/>
+<area shape="rect" id="node3" href="$namespacepipeline_1_1reconstruction__algorithms.html#a3ad644a83287dd39d4343d87d88d63f8" title=" " alt="" coords="730,48,885,108"/>
+<area shape="rect" id="node9" href="$namespacepipeline_1_1reconstruction__algorithms.html#a8225b01aca333e4c26e92480d26cb0f7" title=" " alt="" coords="497,335,651,379"/>
+<area shape="rect" id="node11" href="$namespacepipeline_1_1reconstruction__algorithms.html#aba2f11bb59445d22c2cd00e1cae4d0d3" title=" " alt="" coords="497,471,651,515"/>
+<area shape="rect" id="node13" href="$namespacepipeline_1_1reconstruction__algorithms.html#ab57c5882d876ac091b0e18b202294af9" title=" " alt="" coords="496,403,652,447"/>
+<area shape="rect" id="node10" href="$namespacepipeline_1_1reconstruction__algorithms.html#abad2530cdcf777ed8db1f078b19f8320" title=" " alt="" coords="726,335,890,379"/>
+<area shape="rect" id="node12" href="$namespacepipeline_1_1reconstruction__algorithms.html#a7e9681e59e853d70f0fee2e8ef69c7f3" title=" " alt="" coords="727,471,889,515"/>
+</map>

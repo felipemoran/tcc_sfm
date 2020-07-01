@@ -1,0 +1,44 @@
+\hypertarget{namespacepipeline_1_1init__algorithms}{}\doxysection{pipeline.\+init\+\_\+algorithms Namespace Reference}
+\label{namespacepipeline_1_1init__algorithms}\index{pipeline.init\_algorithms@{pipeline.init\_algorithms}}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1init__algorithms_a6fc14c95f4aab4ee6b08485c96d3527e}{five\+\_\+pt\+\_\+init}} (config, tracks, masks)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespacepipeline_1_1init__algorithms_a6fc14c95f4aab4ee6b08485c96d3527e}\label{namespacepipeline_1_1init__algorithms_a6fc14c95f4aab4ee6b08485c96d3527e}} 
+\index{pipeline.init\_algorithms@{pipeline.init\_algorithms}!five\_pt\_init@{five\_pt\_init}}
+\index{five\_pt\_init@{five\_pt\_init}!pipeline.init\_algorithms@{pipeline.init\_algorithms}}
+\doxysubsubsection{\texorpdfstring{five\_pt\_init()}{five\_pt\_init()}}
+{\footnotesize\ttfamily def pipeline.\+init\+\_\+algorithms.\+five\+\_\+pt\+\_\+init (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{tracks,  }\item[{}]{masks }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Initialization sequence using 5 point algorithm.
+
+Returns None, None, None when only one track is supplied and Rs, Ts and cloud otherwise.
+If there are more then two tracks, the last two are conserved and used, the others are discarded.
+
+:param config: config object. See config.py for more information
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:return: tuple containine:
+    :param Rs: list of R matrices
+    :param Ts: list of T vectors
+    :param cloud: point cloud with N points as a ndarray with shape Nx3
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1init__algorithms_a6fc14c95f4aab4ee6b08485c96d3527e_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1init__algorithms_a6fc14c95f4aab4ee6b08485c96d3527e_icgraph}
+\end{center}
+\end{figure}

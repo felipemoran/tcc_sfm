@@ -1,0 +1,279 @@
+\hypertarget{namespacepipeline_1_1video__algorithms}{}\doxysection{pipeline.\+video\+\_\+algorithms Namespace Reference}
+\label{namespacepipeline_1_1video__algorithms}\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_a9e993435e499957069128ddee1f1e2ec}{klt\+\_\+generator}} (config, file)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_ab9434e8ab5b6f00fdbc0661523e6e54c}{get\+\_\+new\+\_\+features}} (bw\+\_\+frame, config, features, indexes, start\+\_\+index)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_a02722fc9df0a481391fd6c8fe0b4187e}{track\+\_\+features}} (bw\+\_\+frame, config, indexes, prev\+\_\+features, prev\+\_\+frame)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_a53c221f46f0f3111ed0481b6fca12cb7}{match\+\_\+features}} (old\+\_\+features, old\+\_\+indexes, new\+\_\+features, index\+\_\+start, threshold, max\+\_\+features)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_a53ef737778d62c99a1e8a8c49be00035}{choose\+\_\+old\+\_\+features}} (closeness\+\_\+table, points\+\_\+to\+\_\+keep)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_a79b402ea4e558b374d47c4a5e7cd1d1e}{get\+\_\+close\+\_\+points\+\_\+table}} (new\+\_\+features, old\+\_\+features, threshold)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_a2e790cdc497b948e2ecc774d684662ac}{frame\+\_\+getter}} (file, frames\+\_\+to\+\_\+skip)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_a3a191f38dd8c6b7a5588f4aecc3e6b63}{get\+\_\+video}} (file\+\_\+path)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1video__algorithms_a6a062f61d875fd00c2eec4b6632527d9}{display\+\_\+klt\+\_\+debug\+\_\+frame}} (color\+\_\+frame, features, prev\+\_\+features, indexes, delay)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{namespacepipeline_1_1video__algorithms_aa58ecea3e13fd52a56ee158cfcd8484b}{debug\+\_\+colors}} = np.\+random.\+randint(0, 255, (200, 3))
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_a53ef737778d62c99a1e8a8c49be00035}\label{namespacepipeline_1_1video__algorithms_a53ef737778d62c99a1e8a8c49be00035}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!choose\_old\_features@{choose\_old\_features}}
+\index{choose\_old\_features@{choose\_old\_features}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{choose\_old\_features()}{choose\_old\_features()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+choose\+\_\+old\+\_\+features (\begin{DoxyParamCaption}\item[{}]{closeness\+\_\+table,  }\item[{}]{points\+\_\+to\+\_\+keep }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Based on the number of close features (from closeness_table) it chooses which features
+to keep and which to discard
+
+:param closeness_table: table of 0s and 1s where a 1 indicates that the ith point
+from the old feature set is close enough to the jth point from the new feature set
+:param points_to_keep: number of points from old feature set to keep
+:return: mask of bools indicating which features to keep
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a53ef737778d62c99a1e8a8c49be00035_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_a6a062f61d875fd00c2eec4b6632527d9}\label{namespacepipeline_1_1video__algorithms_a6a062f61d875fd00c2eec4b6632527d9}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!display\_klt\_debug\_frame@{display\_klt\_debug\_frame}}
+\index{display\_klt\_debug\_frame@{display\_klt\_debug\_frame}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{display\_klt\_debug\_frame()}{display\_klt\_debug\_frame()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+display\+\_\+klt\+\_\+debug\+\_\+frame (\begin{DoxyParamCaption}\item[{}]{color\+\_\+frame,  }\item[{}]{features,  }\item[{}]{prev\+\_\+features,  }\item[{}]{indexes,  }\item[{}]{delay }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Display a frame and colored dots indicating which features are being tracked
+
+:param color_frame: original frame
+:param features: list of features being tracked
+:param prev_features: list of previous feature positions
+:param indexes: list of featue indexes
+:param delay: wait time before exiting visualization
+:return: None
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a6a062f61d875fd00c2eec4b6632527d9_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_a2e790cdc497b948e2ecc774d684662ac}\label{namespacepipeline_1_1video__algorithms_a2e790cdc497b948e2ecc774d684662ac}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!frame\_getter@{frame\_getter}}
+\index{frame\_getter@{frame\_getter}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{frame\_getter()}{frame\_getter()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+frame\+\_\+getter (\begin{DoxyParamCaption}\item[{}]{file,  }\item[{}]{frames\+\_\+to\+\_\+skip }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Gets a frame from file, skips frames_to_skip times and returns the color and
+grayscale version of next frame
+
+:param file: video file
+:param frames_to_skip: number of frames to skip between returned frames
+:return: original video frame and grayscale version
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a2e790cdc497b948e2ecc774d684662ac_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_a79b402ea4e558b374d47c4a5e7cd1d1e}\label{namespacepipeline_1_1video__algorithms_a79b402ea4e558b374d47c4a5e7cd1d1e}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!get\_close\_points\_table@{get\_close\_points\_table}}
+\index{get\_close\_points\_table@{get\_close\_points\_table}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{get\_close\_points\_table()}{get\_close\_points\_table()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+get\+\_\+close\+\_\+points\+\_\+table (\begin{DoxyParamCaption}\item[{}]{new\+\_\+features,  }\item[{}]{old\+\_\+features,  }\item[{}]{threshold }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Generated the closeness table of 0s and 1s where a 1 indicates that the ith point
+from the old feature set is close enough to the jth point from the new feature set.
+
+The size of the table is len(old_features) lines and len(new_features) columns.
+
+:param new_features: list of new features to track
+:param old_features: list of old features to track
+:param threshold: distance (in pixels) below which two points are considered close
+:return:
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a79b402ea4e558b374d47c4a5e7cd1d1e_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_ab9434e8ab5b6f00fdbc0661523e6e54c}\label{namespacepipeline_1_1video__algorithms_ab9434e8ab5b6f00fdbc0661523e6e54c}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!get\_new\_features@{get\_new\_features}}
+\index{get\_new\_features@{get\_new\_features}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{get\_new\_features()}{get\_new\_features()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+get\+\_\+new\+\_\+features (\begin{DoxyParamCaption}\item[{}]{bw\+\_\+frame,  }\item[{}]{config,  }\item[{}]{features,  }\item[{}]{indexes,  }\item[{}]{start\+\_\+index }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Calculates new features to track and mergest it with previous ones
+
+:param bw_frame: frame in black and white
+:param config: config object. See config.py for more information
+:param features: previous features
+:param indexes: previous features indexes
+:param start_index: next index to be used on new features
+:return: new set of features to be tracked and corresponding indexes
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_ab9434e8ab5b6f00fdbc0661523e6e54c_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_ab9434e8ab5b6f00fdbc0661523e6e54c_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_a3a191f38dd8c6b7a5588f4aecc3e6b63}\label{namespacepipeline_1_1video__algorithms_a3a191f38dd8c6b7a5588f4aecc3e6b63}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!get\_video@{get\_video}}
+\index{get\_video@{get\_video}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{get\_video()}{get\_video()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+get\+\_\+video (\begin{DoxyParamCaption}\item[{}]{file\+\_\+path }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Loads file from file_path
+
+:param file_path:
+:return:
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a3a191f38dd8c6b7a5588f4aecc3e6b63_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_a9e993435e499957069128ddee1f1e2ec}\label{namespacepipeline_1_1video__algorithms_a9e993435e499957069128ddee1f1e2ec}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!klt\_generator@{klt\_generator}}
+\index{klt\_generator@{klt\_generator}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{klt\_generator()}{klt\_generator()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+klt\+\_\+generator (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{file }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Generates and tracks KLT features from a video file.
+
+This function generates new features according to the parameters set in config and tracks
+old features as the video progresses. At each frame it tracks previous features
+and according to the number of frames to skip it yields a vector of features and their
+indexes.
+
+Feature indexes are unique and never repeating therefore can be used for indexing throughout
+the pipeline without collision.
+
+:param config: config object. See config.py for more information
+:param file: video file object
+:return: generator of tracks. Each item is of the form
+    (
+        frame_number: number of frame, monotonically increasing
+        features: list of tuples with each feature location
+        indexes: list of indexes for each returned features. These indexes
+        are a global non repeating number corresponding to each feature
+        and can be used to uniquely reference a reconstructed point
+    )
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a9e993435e499957069128ddee1f1e2ec_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a9e993435e499957069128ddee1f1e2ec_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_a53c221f46f0f3111ed0481b6fca12cb7}\label{namespacepipeline_1_1video__algorithms_a53c221f46f0f3111ed0481b6fca12cb7}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!match\_features@{match\_features}}
+\index{match\_features@{match\_features}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{match\_features()}{match\_features()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+match\+\_\+features (\begin{DoxyParamCaption}\item[{}]{old\+\_\+features,  }\item[{}]{old\+\_\+indexes,  }\item[{}]{new\+\_\+features,  }\item[{}]{index\+\_\+start,  }\item[{}]{threshold,  }\item[{}]{max\+\_\+features }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Given a set of old features and new proposed features, it selects which features to use.
+
+Selection is done by calculating the euclidean distance between all features from
+old_features vector 
+
+:param old_features:
+:param old_indexes:
+:param new_features:
+:param index_start:
+:param threshold:
+:param max_features:
+:return:
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a53c221f46f0f3111ed0481b6fca12cb7_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a53c221f46f0f3111ed0481b6fca12cb7_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_a02722fc9df0a481391fd6c8fe0b4187e}\label{namespacepipeline_1_1video__algorithms_a02722fc9df0a481391fd6c8fe0b4187e}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!track\_features@{track\_features}}
+\index{track\_features@{track\_features}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{track\_features()}{track\_features()}}
+{\footnotesize\ttfamily def pipeline.\+video\+\_\+algorithms.\+track\+\_\+features (\begin{DoxyParamCaption}\item[{}]{bw\+\_\+frame,  }\item[{}]{config,  }\item[{}]{indexes,  }\item[{}]{prev\+\_\+features,  }\item[{}]{prev\+\_\+frame }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Tracks a given set of indexes returning their new positions and dropping features
+that are not found
+
+:param bw_frame: frame in black and white
+:param config: config object. See config.py for more information
+:param indexes: previous features indexes
+:param prev_features: features from previous frames
+:param prev_frame: previous frame
+:return: new location of features and indexes
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1video__algorithms_a02722fc9df0a481391fd6c8fe0b4187e_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{namespacepipeline_1_1video__algorithms_aa58ecea3e13fd52a56ee158cfcd8484b}\label{namespacepipeline_1_1video__algorithms_aa58ecea3e13fd52a56ee158cfcd8484b}} 
+\index{pipeline.video\_algorithms@{pipeline.video\_algorithms}!debug\_colors@{debug\_colors}}
+\index{debug\_colors@{debug\_colors}!pipeline.video\_algorithms@{pipeline.video\_algorithms}}
+\doxysubsubsection{\texorpdfstring{debug\_colors}{debug\_colors}}
+{\footnotesize\ttfamily pipeline.\+video\+\_\+algorithms.\+debug\+\_\+colors = np.\+random.\+randint(0, 255, (200, 3))}
+

@@ -1,0 +1,254 @@
+\hypertarget{namespacepipeline_1_1bundle__adjustment}{}\doxysection{pipeline.\+bundle\+\_\+adjustment Namespace Reference}
+\label{namespacepipeline_1_1bundle__adjustment}\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_ad9fa8709f63ff17f8887231287fc6cc8}{\+\_\+prepare\+\_\+optimization\+\_\+input}} (cloud, Rs, Ts, tracks, masks)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_abe6ed9bfc15c4bfb2b7c55a4aa471ea5}{\+\_\+parse\+\_\+optimization\+\_\+result}} (point\+\_\+cloud, optimized\+\_\+cameras, optimized\+\_\+points)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_ab4975c2c211187928c071db09747dda3}{\+\_\+rotate}} (points, rot\+\_\+vecs)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_a4bb6ba65204917b0b86268c00f539bf8}{\+\_\+project}} (config, points, camera\+\_\+params)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_af7b5a503f05c46cf413f3da418e065c0}{\+\_\+objective\+\_\+function}} (config, params, n\+\_\+cameras, n\+\_\+points, camera\+\_\+indices, point\+\_\+indices, points\+\_\+2d)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_aa5a664447f0fdcda37c49ff1336a2769}{\+\_\+bundle\+\_\+adjustment\+\_\+sparsity}} (n\+\_\+cameras, n\+\_\+points, camera\+\_\+indices, point\+\_\+indices)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_ad9bcfb81bec6f0fd05bb04017f297795}{\+\_\+get\+\_\+optimized\+\_\+params}} (params, n\+\_\+cameras, n\+\_\+points)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_a35f652367055098761356c63cfd73861}{\+\_\+optimize}} (config, camera\+\_\+params, points\+\_\+3d, points\+\_\+2d, camera\+\_\+indices, point\+\_\+indices)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1bundle__adjustment_a56779f060d433872c27adc08e049a104}{run}} (config, Rs, Ts, cloud, tracks, masks)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}Structure from Motion bundle adjusment module.
+
+Based on: https://scipy-cookbook.readthedocs.io/items/bundle_adjustment.html
+
+Authors: Caio Cancian, Felipe Moran
+
+Version: 1.0.0\end{DoxyVerb}
+ 
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_aa5a664447f0fdcda37c49ff1336a2769}\label{namespacepipeline_1_1bundle__adjustment_aa5a664447f0fdcda37c49ff1336a2769}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!\_bundle\_adjustment\_sparsity@{\_bundle\_adjustment\_sparsity}}
+\index{\_bundle\_adjustment\_sparsity@{\_bundle\_adjustment\_sparsity}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{\_bundle\_adjustment\_sparsity()}{\_bundle\_adjustment\_sparsity()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+\_\+bundle\+\_\+adjustment\+\_\+sparsity (\begin{DoxyParamCaption}\item[{}]{n\+\_\+cameras,  }\item[{}]{n\+\_\+points,  }\item[{}]{camera\+\_\+indices,  }\item[{}]{point\+\_\+indices }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Build optimization sparse matrix.\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_aa5a664447f0fdcda37c49ff1336a2769_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_ad9bcfb81bec6f0fd05bb04017f297795}\label{namespacepipeline_1_1bundle__adjustment_ad9bcfb81bec6f0fd05bb04017f297795}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!\_get\_optimized\_params@{\_get\_optimized\_params}}
+\index{\_get\_optimized\_params@{\_get\_optimized\_params}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{\_get\_optimized\_params()}{\_get\_optimized\_params()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+\_\+get\+\_\+optimized\+\_\+params (\begin{DoxyParamCaption}\item[{}]{params,  }\item[{}]{n\+\_\+cameras,  }\item[{}]{n\+\_\+points }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Parse optimization results to camera params and 3D points\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_ad9bcfb81bec6f0fd05bb04017f297795_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_af7b5a503f05c46cf413f3da418e065c0}\label{namespacepipeline_1_1bundle__adjustment_af7b5a503f05c46cf413f3da418e065c0}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!\_objective\_function@{\_objective\_function}}
+\index{\_objective\_function@{\_objective\_function}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{\_objective\_function()}{\_objective\_function()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+\_\+objective\+\_\+function (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{params,  }\item[{}]{n\+\_\+cameras,  }\item[{}]{n\+\_\+points,  }\item[{}]{camera\+\_\+indices,  }\item[{}]{point\+\_\+indices,  }\item[{}]{points\+\_\+2d }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Compute residuals.
+
+`params` contains camera parameters and 3-D coordinates.
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_af7b5a503f05c46cf413f3da418e065c0_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_a35f652367055098761356c63cfd73861}\label{namespacepipeline_1_1bundle__adjustment_a35f652367055098761356c63cfd73861}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!\_optimize@{\_optimize}}
+\index{\_optimize@{\_optimize}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{\_optimize()}{\_optimize()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+\_\+optimize (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{camera\+\_\+params,  }\item[{}]{points\+\_\+3d,  }\item[{}]{points\+\_\+2d,  }\item[{}]{camera\+\_\+indices,  }\item[{}]{point\+\_\+indices }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Apply bundle adjustment optimization
+
+Parameters
+----------
+camera_params: array, shape (n_cameras, 6)
+    Contains initial camera parameter estimates. For each row,
+    the parameters must be organized as 3 rotations, then 3
+    translations in the camera reference frame.
+
+points_3d: array, shape (n_points, 3)
+    Contains inital 3D points coordinates estimates in the same
+    reference frame.
+
+points_2d: array, shape (n_observations, 2)
+    Contains the 2D coordinates of every observed 3D point projected
+    using one of the cameras.
+
+camera_indices: array, shape (n_observations,)
+    Contains camera indices for each observed projection. The i-th
+    element of this array corresponds to the camera that generated
+    the i-th 2D point.
+
+point_indices: array, shape (n_observations,)
+    Contains 3D points indices for each observed projection. The i-th
+    element of this array corresponds to the 3D point that generated
+    the i-th 2D point.
+
+Returns
+-------
+optimized_cameras: array, shape (n_cameras, 6)
+    Contains optimized camera parameters. Same order as input.
+
+optimized_points: array, shape (n_points, 3)
+    Contains optimized 3D points coordinates.
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_a35f652367055098761356c63cfd73861_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_a35f652367055098761356c63cfd73861_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_abe6ed9bfc15c4bfb2b7c55a4aa471ea5}\label{namespacepipeline_1_1bundle__adjustment_abe6ed9bfc15c4bfb2b7c55a4aa471ea5}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!\_parse\_optimization\_result@{\_parse\_optimization\_result}}
+\index{\_parse\_optimization\_result@{\_parse\_optimization\_result}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{\_parse\_optimization\_result()}{\_parse\_optimization\_result()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+\_\+parse\+\_\+optimization\+\_\+result (\begin{DoxyParamCaption}\item[{}]{point\+\_\+cloud,  }\item[{}]{optimized\+\_\+cameras,  }\item[{}]{optimized\+\_\+points }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Convert data back to pipeline style from BA style
+
+:param point_cloud: original pre-optimization point cloud
+:param optimized_cameras: matrix with optimized cameras of shape Nx6. One camera per row with 3 parameters for rotation and 3 for translation
+:param optimized_points: modified points in a Px3 matrix
+:return:
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_abe6ed9bfc15c4bfb2b7c55a4aa471ea5_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_ad9fa8709f63ff17f8887231287fc6cc8}\label{namespacepipeline_1_1bundle__adjustment_ad9fa8709f63ff17f8887231287fc6cc8}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!\_prepare\_optimization\_input@{\_prepare\_optimization\_input}}
+\index{\_prepare\_optimization\_input@{\_prepare\_optimization\_input}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{\_prepare\_optimization\_input()}{\_prepare\_optimization\_input()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+\_\+prepare\+\_\+optimization\+\_\+input (\begin{DoxyParamCaption}\item[{}]{cloud,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{tracks,  }\item[{}]{masks }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Prepares the input data structure for the optimization step
+
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:param Rs: list of R matrices
+:param Ts: list of T vectors
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_ad9fa8709f63ff17f8887231287fc6cc8_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_a4bb6ba65204917b0b86268c00f539bf8}\label{namespacepipeline_1_1bundle__adjustment_a4bb6ba65204917b0b86268c00f539bf8}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!\_project@{\_project}}
+\index{\_project@{\_project}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{\_project()}{\_project()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+\_\+project (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{points,  }\item[{}]{camera\+\_\+params }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Convert 3-D points to 2-D by projecting onto images.
+
+No radial distortion is considered.
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_a4bb6ba65204917b0b86268c00f539bf8_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_a4bb6ba65204917b0b86268c00f539bf8_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_ab4975c2c211187928c071db09747dda3}\label{namespacepipeline_1_1bundle__adjustment_ab4975c2c211187928c071db09747dda3}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!\_rotate@{\_rotate}}
+\index{\_rotate@{\_rotate}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{\_rotate()}{\_rotate()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+\_\+rotate (\begin{DoxyParamCaption}\item[{}]{points,  }\item[{}]{rot\+\_\+vecs }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Rotate 3D points by given rotation vectors.
+
+Rodrigues' rotation formula is used.
+See https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+for details
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_ab4975c2c211187928c071db09747dda3_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1bundle__adjustment_a56779f060d433872c27adc08e049a104}\label{namespacepipeline_1_1bundle__adjustment_a56779f060d433872c27adc08e049a104}} 
+\index{pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}!run@{run}}
+\index{run@{run}!pipeline.bundle\_adjustment@{pipeline.bundle\_adjustment}}
+\doxysubsubsection{\texorpdfstring{run()}{run()}}
+{\footnotesize\ttfamily def pipeline.\+bundle\+\_\+adjustment.\+run (\begin{DoxyParamCaption}\item[{}]{config,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{cloud,  }\item[{}]{tracks,  }\item[{}]{masks }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Entry point function for bundle adjustment. Parses input, feeds it to optimizes and parses the result back to same format
+
+:param config: config object. See config.py for more information
+:param Rs: list of R matrices
+:param Ts: list of T vectors
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:return: returns optimized Rs, Ts and cloud
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1bundle__adjustment_a56779f060d433872c27adc08e049a104_cgraph}
+\end{center}
+\end{figure}

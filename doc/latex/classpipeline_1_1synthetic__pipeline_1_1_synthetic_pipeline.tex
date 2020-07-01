@@ -1,0 +1,248 @@
+\hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline}{}\doxysection{pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline Class Reference}
+\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline}\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+
+
+Inheritance diagram for pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=215pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=215pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_ae9decc05cec8ac1d8bcc111baa41a2ae}{\+\_\+\+\_\+init\+\_\+\+\_\+}} (self, \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_aa1cd6c39b496103f866cd0a7a6fe232d}{config}})
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_abb9d66d44d4bc007054b7ef396812687}{synthetic\+\_\+case}}
+\item 
+\mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a142489a621d638df21f8110ca02990b3}{original\+\_\+points}}
+\item 
+\mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a57e9b59b144a4c37d990d270b7a2d28a}{original\+\_\+\+Rs}}
+\item 
+\mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a9f1715d16b1b12f3fd6c9ba5ab287b99}{original\+\_\+\+Ts}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_aa30b7040698704e448c17eacccde8cc6}{\+\_\+setup}} (self, file\+\_\+path)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d525a3a2bd5e71280c1fa44f4db1f1b}{\+\_\+synthetic\+\_\+generator}} (self)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d37ec74a26ea1a9fb1a237850215a60}{\+\_\+get\+\_\+synthetic\+\_\+points}} (self)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a94ead87e5a024797ce51b0a4a1c66fbc}{\+\_\+get\+\_\+synthetic\+\_\+camera\+\_\+rotations}} (self)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_adfba2d08e52d56c86b50eb26fd7da9fb}{\+\_\+get\+\_\+synthetic\+\_\+camera\+\_\+translations}} (self)
+\item 
+def \mbox{\hyperlink{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a8d19aa07e484c76d7b1a6eb70c6f89fe}{\+\_\+calculate\+\_\+reconstruction\+\_\+error}} (self, Rs, Ts, tracks, masks, frame\+\_\+numbers, cloud)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}Class that inherist from VideoPipeline that allows for the generation and injection of
+synthetic data into the reconstruction pipeline for debugging and development purposes
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_ae9decc05cec8ac1d8bcc111baa41a2ae}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_ae9decc05cec8ac1d8bcc111baa41a2ae}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!\_\_init\_\_@{\_\_init\_\_}}
+\index{\_\_init\_\_@{\_\_init\_\_}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{\_\_init\_\_()}{\_\_init\_\_()}}
+{\footnotesize\ttfamily def pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+\_\+\+\_\+init\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{config }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a8d19aa07e484c76d7b1a6eb70c6f89fe}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a8d19aa07e484c76d7b1a6eb70c6f89fe}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!\_calculate\_reconstruction\_error@{\_calculate\_reconstruction\_error}}
+\index{\_calculate\_reconstruction\_error@{\_calculate\_reconstruction\_error}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{\_calculate\_reconstruction\_error()}{\_calculate\_reconstruction\_error()}}
+{\footnotesize\ttfamily def pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+\_\+calculate\+\_\+reconstruction\+\_\+error (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{tracks,  }\item[{}]{masks,  }\item[{}]{frame\+\_\+numbers,  }\item[{}]{cloud }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Overwrite of superclass function that calculates camera orientation and
+position errors, and 3D point errors other than reprojection error. Results
+are structured in a struct as described below.
+
+:param Rs: list of R matrices
+:param Ts: list of T vectors
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of the item in the cloud
+:param frame_numbers: list of indexes for each track in tracks
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:return:
+\end{DoxyVerb}
+ 
+
+Reimplemented from \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_af722585b7cab69620ed3cecf8db7c8e1}{pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline}}.
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a8d19aa07e484c76d7b1a6eb70c6f89fe_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a8d19aa07e484c76d7b1a6eb70c6f89fe_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a94ead87e5a024797ce51b0a4a1c66fbc}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a94ead87e5a024797ce51b0a4a1c66fbc}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!\_get\_synthetic\_camera\_rotations@{\_get\_synthetic\_camera\_rotations}}
+\index{\_get\_synthetic\_camera\_rotations@{\_get\_synthetic\_camera\_rotations}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{\_get\_synthetic\_camera\_rotations()}{\_get\_synthetic\_camera\_rotations()}}
+{\footnotesize\ttfamily def pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+\_\+get\+\_\+synthetic\+\_\+camera\+\_\+rotations (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Returns rotation matrices of synthetic cameras in the global reference frame
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a94ead87e5a024797ce51b0a4a1c66fbc_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_adfba2d08e52d56c86b50eb26fd7da9fb}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_adfba2d08e52d56c86b50eb26fd7da9fb}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!\_get\_synthetic\_camera\_translations@{\_get\_synthetic\_camera\_translations}}
+\index{\_get\_synthetic\_camera\_translations@{\_get\_synthetic\_camera\_translations}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{\_get\_synthetic\_camera\_translations()}{\_get\_synthetic\_camera\_translations()}}
+{\footnotesize\ttfamily def pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+\_\+get\+\_\+synthetic\+\_\+camera\+\_\+translations (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Returns translation vectors of synthetic cameras in the global reference frame
+:return:
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_adfba2d08e52d56c86b50eb26fd7da9fb_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d37ec74a26ea1a9fb1a237850215a60}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d37ec74a26ea1a9fb1a237850215a60}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!\_get\_synthetic\_points@{\_get\_synthetic\_points}}
+\index{\_get\_synthetic\_points@{\_get\_synthetic\_points}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{\_get\_synthetic\_points()}{\_get\_synthetic\_points()}}
+{\footnotesize\ttfamily def pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+\_\+get\+\_\+synthetic\+\_\+points (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Returns synthetic 3D points
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d37ec74a26ea1a9fb1a237850215a60_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_aa30b7040698704e448c17eacccde8cc6}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_aa30b7040698704e448c17eacccde8cc6}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!\_setup@{\_setup}}
+\index{\_setup@{\_setup}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{\_setup()}{\_setup()}}
+{\footnotesize\ttfamily def pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+\_\+setup (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{dir }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Instantiated frame generator
+
+This function is separated from run() so that child classes can modify it
+easily
+
+:param dir: filepath of video file
+:return: generator of raw frames
+\end{DoxyVerb}
+ 
+
+Reimplemented from \mbox{\hyperlink{classpipeline_1_1video__pipeline_1_1_video_pipeline_a2f9bd9f95d9236b26dd175e9a36935e3}{pipeline.\+video\+\_\+pipeline.\+Video\+Pipeline}}.
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_aa30b7040698704e448c17eacccde8cc6_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_aa30b7040698704e448c17eacccde8cc6_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d525a3a2bd5e71280c1fa44f4db1f1b}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d525a3a2bd5e71280c1fa44f4db1f1b}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!\_synthetic\_generator@{\_synthetic\_generator}}
+\index{\_synthetic\_generator@{\_synthetic\_generator}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{\_synthetic\_generator()}{\_synthetic\_generator()}}
+{\footnotesize\ttfamily def pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+\_\+synthetic\+\_\+generator (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\begin{DoxyVerb}Replaces the original generator yielding synthetic data instead of real data
+
+:return: yields track a track slice containing synthetic features and their corresponding indexes
+\end{DoxyVerb}
+ Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d525a3a2bd5e71280c1fa44f4db1f1b_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a5d525a3a2bd5e71280c1fa44f4db1f1b_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a142489a621d638df21f8110ca02990b3}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a142489a621d638df21f8110ca02990b3}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!original\_points@{original\_points}}
+\index{original\_points@{original\_points}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{original\_points}{original\_points}}
+{\footnotesize\ttfamily pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+original\+\_\+points}
+
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a57e9b59b144a4c37d990d270b7a2d28a}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a57e9b59b144a4c37d990d270b7a2d28a}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!original\_Rs@{original\_Rs}}
+\index{original\_Rs@{original\_Rs}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{original\_Rs}{original\_Rs}}
+{\footnotesize\ttfamily pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+original\+\_\+\+Rs}
+
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a9f1715d16b1b12f3fd6c9ba5ab287b99}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_a9f1715d16b1b12f3fd6c9ba5ab287b99}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!original\_Ts@{original\_Ts}}
+\index{original\_Ts@{original\_Ts}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{original\_Ts}{original\_Ts}}
+{\footnotesize\ttfamily pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+original\+\_\+\+Ts}
+
+\mbox{\Hypertarget{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_abb9d66d44d4bc007054b7ef396812687}\label{classpipeline_1_1synthetic__pipeline_1_1_synthetic_pipeline_abb9d66d44d4bc007054b7ef396812687}} 
+\index{pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}!synthetic\_case@{synthetic\_case}}
+\index{synthetic\_case@{synthetic\_case}!pipeline.synthetic\_pipeline.SyntheticPipeline@{pipeline.synthetic\_pipeline.SyntheticPipeline}}
+\doxysubsubsection{\texorpdfstring{synthetic\_case}{synthetic\_case}}
+{\footnotesize\ttfamily pipeline.\+synthetic\+\_\+pipeline.\+Synthetic\+Pipeline.\+synthetic\+\_\+case}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+pipeline/\mbox{\hyperlink{synthetic__pipeline_8py}{synthetic\+\_\+pipeline.\+py}}\end{DoxyCompactItemize}

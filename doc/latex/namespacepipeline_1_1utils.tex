@@ -1,0 +1,328 @@
+\hypertarget{namespacepipeline_1_1utils}{}\doxysection{pipeline.\+utils Namespace Reference}
+\label{namespacepipeline_1_1utils}\index{pipeline.utils@{pipeline.utils}}
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classpipeline_1_1utils_1_1_error_metric}{Error\+Metric}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a670658ce45b0fffb66b30d5eb27283c3}{write\+\_\+to\+\_\+viz\+\_\+file}} (camera\+\_\+matrix, Rs, Ts, points)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a4ffce63a2b056f0b46be16b3aa22a54b}{call\+\_\+viz}} ()
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_aa4ac3552fb4a0b82a4fde38a57aa6d27}{visualize}} (camera\+\_\+matrix, Rs, Ts, points)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a0e8960cea34beb0aba7fa9db0a431086}{compose\+\_\+rts}} (rel\+\_\+R, rel\+\_\+T, comp\+\_\+R, comp\+\_\+T)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a0182e940175c0756575140682d4925f9}{translate\+\_\+points\+\_\+to\+\_\+base\+\_\+frame}} (comp\+\_\+R, comp\+\_\+T, points)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_ab7aa4a13955a58bf35825b86640d6af8}{get\+\_\+nan\+\_\+bool\+\_\+mask}} (input\+\_\+array)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a298713738c89db1098c90f610da25c7a}{get\+\_\+nan\+\_\+index\+\_\+mask}} (input\+\_\+array)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a713e25992d92b2f135ee8466fd37bbb8}{get\+\_\+not\+\_\+nan\+\_\+index\+\_\+mask}} (input\+\_\+array)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_aa164333ed92ea742cdfe3dade2180699}{invert\+\_\+reference\+\_\+frame}} (R, T)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_ac256b0b60a7e3900bbaa71e86b31038d}{init\+\_\+rt}} ()
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_ac6d1da8518e39edf97f07c1b20113aee}{get\+\_\+intersection\+\_\+mask}} (a, b)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a2d855b371a414d0a81090d366dcb955b}{get\+\_\+last\+\_\+track\+\_\+pair}} (tracks, masks)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a543a48d5038f81b1fdbbb9bec1a54e89}{points\+\_\+to\+\_\+cloud}} (points, indexes)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_a9af1bd285f3c5b4a350d7a5bf6202ef5}{add\+\_\+points\+\_\+to\+\_\+cloud}} (cloud, points, index\+\_\+mask)
+\item 
+def \mbox{\hyperlink{namespacepipeline_1_1utils_af9486db882212d92ac6271f5dae0a75c}{generator\+\_\+copier}} (generator, num\+\_\+copies, num\+\_\+elements=None)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{namespacepipeline_1_1utils_a766c9f35d9d66c8f6d46897c5dda2a60}{T\+Y\+P\+E\+\_\+\+C\+A\+L\+I\+B\+R\+A\+T\+I\+O\+N\+\_\+\+M\+A\+T\+R\+IX}} = 0
+\item 
+int \mbox{\hyperlink{namespacepipeline_1_1utils_a48dbc28620ceea5d5618257c5fd6efe8}{T\+Y\+P\+E\+\_\+\+C\+A\+M\+E\+RA}} = 1
+\item 
+int \mbox{\hyperlink{namespacepipeline_1_1utils_abc848783a6de3aced352261cc2fc7570}{T\+Y\+P\+E\+\_\+\+P\+O\+I\+NT}} = 2
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a9af1bd285f3c5b4a350d7a5bf6202ef5}\label{namespacepipeline_1_1utils_a9af1bd285f3c5b4a350d7a5bf6202ef5}} 
+\index{pipeline.utils@{pipeline.utils}!add\_points\_to\_cloud@{add\_points\_to\_cloud}}
+\index{add\_points\_to\_cloud@{add\_points\_to\_cloud}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{add\_points\_to\_cloud()}{add\_points\_to\_cloud()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+add\+\_\+points\+\_\+to\+\_\+cloud (\begin{DoxyParamCaption}\item[{}]{cloud,  }\item[{}]{points,  }\item[{}]{index\+\_\+mask }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Adds new points from 'points' to the cloud
+
+:param cloud: point cloud with N points as a ndarray with shape Nx3
+:param points: calculated 3D points from a given set of frames
+:param index_mask: vector with corresponding indexes for each point in points
+:return:
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1utils_a9af1bd285f3c5b4a350d7a5bf6202ef5_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a4ffce63a2b056f0b46be16b3aa22a54b}\label{namespacepipeline_1_1utils_a4ffce63a2b056f0b46be16b3aa22a54b}} 
+\index{pipeline.utils@{pipeline.utils}!call\_viz@{call\_viz}}
+\index{call\_viz@{call\_viz}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{call\_viz()}{call\_viz()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+call\+\_\+viz (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Call visualizes with default csv file location
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=335pt]{namespacepipeline_1_1utils_a4ffce63a2b056f0b46be16b3aa22a54b_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a0e8960cea34beb0aba7fa9db0a431086}\label{namespacepipeline_1_1utils_a0e8960cea34beb0aba7fa9db0a431086}} 
+\index{pipeline.utils@{pipeline.utils}!compose\_rts@{compose\_rts}}
+\index{compose\_rts@{compose\_rts}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{compose\_rts()}{compose\_rts()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+compose\+\_\+rts (\begin{DoxyParamCaption}\item[{}]{rel\+\_\+R,  }\item[{}]{rel\+\_\+T,  }\item[{}]{comp\+\_\+R,  }\item[{}]{comp\+\_\+T }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Porperly composes two sets of rotation matrices and translation vectors
+
+:param rel_R: rotation matrix of new camera
+:param rel_T: translation vector of new camera
+:param comp_R: rotation matrix of previous camera
+:param comp_T: translation vector of previous camera
+:return: composed rotation matrix and translation vector
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacepipeline_1_1utils_af9486db882212d92ac6271f5dae0a75c}\label{namespacepipeline_1_1utils_af9486db882212d92ac6271f5dae0a75c}} 
+\index{pipeline.utils@{pipeline.utils}!generator\_copier@{generator\_copier}}
+\index{generator\_copier@{generator\_copier}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{generator\_copier()}{generator\_copier()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+generator\+\_\+copier (\begin{DoxyParamCaption}\item[{}]{generator,  }\item[{}]{num\+\_\+copies,  }\item[{}]{num\+\_\+elements = {\ttfamily None} }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Copies a generator multiple times up to a certain point or until it's end,
+whichever comes first. The generator evaluation is eager, meaning that if an
+infinite generator is passed without a number of elements to be copied the
+code will hang.
+
+:param generator: generator to be copied
+:param num_copies: number of copies to be generated
+:param num_elements: number of elements to be copied
+:return: list with original generator and copies
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacepipeline_1_1utils_ac6d1da8518e39edf97f07c1b20113aee}\label{namespacepipeline_1_1utils_ac6d1da8518e39edf97f07c1b20113aee}} 
+\index{pipeline.utils@{pipeline.utils}!get\_intersection\_mask@{get\_intersection\_mask}}
+\index{get\_intersection\_mask@{get\_intersection\_mask}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{get\_intersection\_mask()}{get\_intersection\_mask()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+get\+\_\+intersection\+\_\+mask (\begin{DoxyParamCaption}\item[{}]{a,  }\item[{}]{b }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Calculates the intersection of two index returning only those that are present in both
+vectors a nd b
+
+:param a: index vector a
+:param b: index vector b
+:return: intesection between a and b
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=306pt]{namespacepipeline_1_1utils_ac6d1da8518e39edf97f07c1b20113aee_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a2d855b371a414d0a81090d366dcb955b}\label{namespacepipeline_1_1utils_a2d855b371a414d0a81090d366dcb955b}} 
+\index{pipeline.utils@{pipeline.utils}!get\_last\_track\_pair@{get\_last\_track\_pair}}
+\index{get\_last\_track\_pair@{get\_last\_track\_pair}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{get\_last\_track\_pair()}{get\_last\_track\_pair()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+get\+\_\+last\+\_\+track\+\_\+pair (\begin{DoxyParamCaption}\item[{}]{tracks,  }\item[{}]{masks }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Forms a track pair with the last two track slices.
+
+This formed pair consists of all the features that are present in both traacks.
+
+:param tracks: list of 2D feature vectors. Each vector has the shape Dx2
+:param masks: list of index masks for each feature vector. Indexes refer to the position of
+the item in the cloud
+:return: track pair and pair index mask in the same structure as tracks and masks
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=306pt]{namespacepipeline_1_1utils_a2d855b371a414d0a81090d366dcb955b_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_ab7aa4a13955a58bf35825b86640d6af8}\label{namespacepipeline_1_1utils_ab7aa4a13955a58bf35825b86640d6af8}} 
+\index{pipeline.utils@{pipeline.utils}!get\_nan\_bool\_mask@{get\_nan\_bool\_mask}}
+\index{get\_nan\_bool\_mask@{get\_nan\_bool\_mask}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{get\_nan\_bool\_mask()}{get\_nan\_bool\_mask()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+get\+\_\+nan\+\_\+bool\+\_\+mask (\begin{DoxyParamCaption}\item[{}]{input\+\_\+array }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Creates mask of booleans indicating which values are Nan/None
+
+:param input_array: feature track or point cloud
+:return: bool mask
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacepipeline_1_1utils_ab7aa4a13955a58bf35825b86640d6af8_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a298713738c89db1098c90f610da25c7a}\label{namespacepipeline_1_1utils_a298713738c89db1098c90f610da25c7a}} 
+\index{pipeline.utils@{pipeline.utils}!get\_nan\_index\_mask@{get\_nan\_index\_mask}}
+\index{get\_nan\_index\_mask@{get\_nan\_index\_mask}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{get\_nan\_index\_mask()}{get\_nan\_index\_mask()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+get\+\_\+nan\+\_\+index\+\_\+mask (\begin{DoxyParamCaption}\item[{}]{input\+\_\+array }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Creates mask with the indexes of elements that are Nan/None.
+
+:param input_array: feature track or point cloud
+:return: index mask
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=305pt]{namespacepipeline_1_1utils_a298713738c89db1098c90f610da25c7a_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a713e25992d92b2f135ee8466fd37bbb8}\label{namespacepipeline_1_1utils_a713e25992d92b2f135ee8466fd37bbb8}} 
+\index{pipeline.utils@{pipeline.utils}!get\_not\_nan\_index\_mask@{get\_not\_nan\_index\_mask}}
+\index{get\_not\_nan\_index\_mask@{get\_not\_nan\_index\_mask}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{get\_not\_nan\_index\_mask()}{get\_not\_nan\_index\_mask()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+get\+\_\+not\+\_\+nan\+\_\+index\+\_\+mask (\begin{DoxyParamCaption}\item[{}]{input\+\_\+array }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Creates mask with the indexes of elements that are not Nan/None.
+
+:param input_array: feature track or point cloud
+:return: index mask
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=325pt]{namespacepipeline_1_1utils_a713e25992d92b2f135ee8466fd37bbb8_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=324pt]{namespacepipeline_1_1utils_a713e25992d92b2f135ee8466fd37bbb8_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_ac256b0b60a7e3900bbaa71e86b31038d}\label{namespacepipeline_1_1utils_ac256b0b60a7e3900bbaa71e86b31038d}} 
+\index{pipeline.utils@{pipeline.utils}!init\_rt@{init\_rt}}
+\index{init\_rt@{init\_rt}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{init\_rt()}{init\_rt()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+init\+\_\+rt (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Creates initial rotation matrix and translation vector
+
+:return: 3x3 identity matix and vector of zeros of shape 3x1
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacepipeline_1_1utils_aa164333ed92ea742cdfe3dade2180699}\label{namespacepipeline_1_1utils_aa164333ed92ea742cdfe3dade2180699}} 
+\index{pipeline.utils@{pipeline.utils}!invert\_reference\_frame@{invert\_reference\_frame}}
+\index{invert\_reference\_frame@{invert\_reference\_frame}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{invert\_reference\_frame()}{invert\_reference\_frame()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+invert\+\_\+reference\+\_\+frame (\begin{DoxyParamCaption}\item[{}]{R,  }\item[{}]{T }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Inverts rotation matrix and translation vector
+
+:param R: rotation matrix
+:param T: translation vector
+:return: inverted R and T
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacepipeline_1_1utils_a543a48d5038f81b1fdbbb9bec1a54e89}\label{namespacepipeline_1_1utils_a543a48d5038f81b1fdbbb9bec1a54e89}} 
+\index{pipeline.utils@{pipeline.utils}!points\_to\_cloud@{points\_to\_cloud}}
+\index{points\_to\_cloud@{points\_to\_cloud}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{points\_to\_cloud()}{points\_to\_cloud()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+points\+\_\+to\+\_\+cloud (\begin{DoxyParamCaption}\item[{}]{points,  }\item[{}]{indexes }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Creates a cloud of points from a set of sparse 3D points and indexes
+
+:param points: point cloud with N points as a ndarray with shape Nx3
+:param indexes: list of index masks for each feature vector. Indexes refer to the position
+of the item in the cloud
+:return: point cloud
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacepipeline_1_1utils_a0182e940175c0756575140682d4925f9}\label{namespacepipeline_1_1utils_a0182e940175c0756575140682d4925f9}} 
+\index{pipeline.utils@{pipeline.utils}!translate\_points\_to\_base\_frame@{translate\_points\_to\_base\_frame}}
+\index{translate\_points\_to\_base\_frame@{translate\_points\_to\_base\_frame}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{translate\_points\_to\_base\_frame()}{translate\_points\_to\_base\_frame()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+translate\+\_\+points\+\_\+to\+\_\+base\+\_\+frame (\begin{DoxyParamCaption}\item[{}]{comp\+\_\+R,  }\item[{}]{comp\+\_\+T,  }\item[{}]{points }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Convert point from local reference frame to global's
+:param comp_R: camera's rotation matrix in the global reference frame
+:param comp_T: camera's translation vector in the global reference frame
+:param points: points to be converted
+:return: point coordinates in the global reference frame
+\end{DoxyVerb}
+ \mbox{\Hypertarget{namespacepipeline_1_1utils_aa4ac3552fb4a0b82a4fde38a57aa6d27}\label{namespacepipeline_1_1utils_aa4ac3552fb4a0b82a4fde38a57aa6d27}} 
+\index{pipeline.utils@{pipeline.utils}!visualize@{visualize}}
+\index{visualize@{visualize}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{visualize()}{visualize()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+visualize (\begin{DoxyParamCaption}\item[{}]{camera\+\_\+matrix,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{points }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Bundles together visualization file creation and visualizer call
+
+:param camera_matrix: calibration matrix
+:param Rs: list of R matrices
+:param Ts: list of T vectors
+:param points: point cloud with N points as a ndarray with shape Nx3
+\end{DoxyVerb}
+ Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=335pt]{namespacepipeline_1_1utils_aa4ac3552fb4a0b82a4fde38a57aa6d27_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a670658ce45b0fffb66b30d5eb27283c3}\label{namespacepipeline_1_1utils_a670658ce45b0fffb66b30d5eb27283c3}} 
+\index{pipeline.utils@{pipeline.utils}!write\_to\_viz\_file@{write\_to\_viz\_file}}
+\index{write\_to\_viz\_file@{write\_to\_viz\_file}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{write\_to\_viz\_file()}{write\_to\_viz\_file()}}
+{\footnotesize\ttfamily def pipeline.\+utils.\+write\+\_\+to\+\_\+viz\+\_\+file (\begin{DoxyParamCaption}\item[{}]{camera\+\_\+matrix,  }\item[{}]{Rs,  }\item[{}]{Ts,  }\item[{}]{points }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Writes input information as a properly formatted csv file for visualization
+
+:param camera_matrix: calibration matrix
+:param Rs: list of R matrices
+:param Ts: list of T vectors
+:param points: point cloud with N points as a ndarray with shape Nx3
+\end{DoxyVerb}
+ Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=323pt]{namespacepipeline_1_1utils_a670658ce45b0fffb66b30d5eb27283c3_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a766c9f35d9d66c8f6d46897c5dda2a60}\label{namespacepipeline_1_1utils_a766c9f35d9d66c8f6d46897c5dda2a60}} 
+\index{pipeline.utils@{pipeline.utils}!TYPE\_CALIBRATION\_MATRIX@{TYPE\_CALIBRATION\_MATRIX}}
+\index{TYPE\_CALIBRATION\_MATRIX@{TYPE\_CALIBRATION\_MATRIX}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{TYPE\_CALIBRATION\_MATRIX}{TYPE\_CALIBRATION\_MATRIX}}
+{\footnotesize\ttfamily int pipeline.\+utils.\+T\+Y\+P\+E\+\_\+\+C\+A\+L\+I\+B\+R\+A\+T\+I\+O\+N\+\_\+\+M\+A\+T\+R\+IX = 0}
+
+\mbox{\Hypertarget{namespacepipeline_1_1utils_a48dbc28620ceea5d5618257c5fd6efe8}\label{namespacepipeline_1_1utils_a48dbc28620ceea5d5618257c5fd6efe8}} 
+\index{pipeline.utils@{pipeline.utils}!TYPE\_CAMERA@{TYPE\_CAMERA}}
+\index{TYPE\_CAMERA@{TYPE\_CAMERA}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{TYPE\_CAMERA}{TYPE\_CAMERA}}
+{\footnotesize\ttfamily int pipeline.\+utils.\+T\+Y\+P\+E\+\_\+\+C\+A\+M\+E\+RA = 1}
+
+\mbox{\Hypertarget{namespacepipeline_1_1utils_abc848783a6de3aced352261cc2fc7570}\label{namespacepipeline_1_1utils_abc848783a6de3aced352261cc2fc7570}} 
+\index{pipeline.utils@{pipeline.utils}!TYPE\_POINT@{TYPE\_POINT}}
+\index{TYPE\_POINT@{TYPE\_POINT}!pipeline.utils@{pipeline.utils}}
+\doxysubsubsection{\texorpdfstring{TYPE\_POINT}{TYPE\_POINT}}
+{\footnotesize\ttfamily int pipeline.\+utils.\+T\+Y\+P\+E\+\_\+\+P\+O\+I\+NT = 2}
+
